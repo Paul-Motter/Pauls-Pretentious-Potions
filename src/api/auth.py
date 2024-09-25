@@ -1,3 +1,5 @@
+import sqlalchemy
+from src import database as db
 from fastapi import Security, HTTPException, status, Request
 from fastapi.security.api_key import APIKeyHeader
 import os

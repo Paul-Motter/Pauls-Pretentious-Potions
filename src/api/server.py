@@ -1,3 +1,5 @@
+import sqlalchemy
+from src import database as db
 from fastapi import FastAPI, exceptions
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
