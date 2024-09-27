@@ -21,6 +21,7 @@ class Barrel(BaseModel):
 
 @router.post("/deliver/{order_id}")
 def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
+
     """ """
     print(f"barrels delievered: {barrels_delivered} order_id: {order_id}")
 
@@ -29,8 +30,13 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
 # Gets called once a day
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
+
+    with db.engine.begin() as connection:
+        inventory = connection.execute(sqlalchemy.text("SELECT * FROM global_inventory"))
+    
     """ """
-    print(wholesale_catalog)
+    print("Inventory\n" + inventory)
+    print("Wolesale Catalog\n" + wholesale_catalog)
 
     return [
         {
