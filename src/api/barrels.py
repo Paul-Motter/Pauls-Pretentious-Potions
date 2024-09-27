@@ -33,6 +33,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     with db.engine.begin() as connection:
         inventory = connection.execute(sqlalchemy.text("SELECT * FROM global_inventory"))
+    inventory[0][1]
     #inventory.fetchone()[0]
     #inventory.fetchall()[0][1]
     """ """
@@ -42,7 +43,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     return [
         {
             "sku": "SMALL_RED_BARREL",
-            "quantity": inventory[0][1],
+            "quantity": 1,
         }
     ]
 
