@@ -31,12 +31,13 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
-    with db.engine.begin() as connection:
-        inventory = connection.execute(sqlalchemy.text("SELECT * FROM global_inventory"))
-    
+    #with db.engine.begin() as connection:
+    #    inventory = connection.execute(sqlalchemy.text("SELECT * FROM global_inventory"))
+    #inventory.fetchone()[0]
+    #inventory.fetchall()[0][1]
     """ """
-    print("Inventory\n" + inventory)
-    print("Wolesale Catalog\n" + wholesale_catalog)
+    #print("Inventory\n" + inventory)
+    #print("Wolesale Catalog\n" + wholesale_catalog)
 
     return [
         {
