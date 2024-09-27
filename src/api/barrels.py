@@ -23,37 +23,39 @@ class Barrel(BaseModel):
 def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     """Checks each delivery to update ml stored and subtract price. Assumes all barrels are green potions."""
     with db.engine.begin() as connection:
-        inventory = connection.execute(sqlalchemy.text("SELECT * FROM global_inventory")).fetchall()
+        inventory = connection.execute(sqlalchemy.text("SELECT ml_green_potions, gold FROM global_inventory")).fetchall()
     #assumes row 1 in green potions and that the barrels are all green.
     for barrel in barrels_delivered:  
-        inventory[0][2] += barrel.ml_per_barrel*barrel.quantity
-        inventory[0][3] -= barrel.price*barrel.quantity
+        inventory[0][0] += barrel.ml_per_barrel*barrel.quantity
+        inventory[0][1] -= barrel.price*barrel.quantity
     with db.engine.begin() as connection:
-        connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET ml_green_potions = {inventory[0][2]}, gold = {inventory[0][3]}"))
+        connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET ml_green_potions = {inventory[0][0]}, gold = {inventory[0][1]}"))
     """Status of order"""
     print(f"barrels delievered: {barrels_delivered} order_id: {order_id}")
 
     return "OK"
 
-# Gets called once a day
+
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
+# Gets called once a day
+# return [ {
+#           "sku": String
+#           "quantity": int
+# }]
     """Purchases based solely on inventory status."""
+    barrelPlan = []
     with db.engine.begin() as connection:
-        inventory = connection.execute(sqlalchemy.text("SELECT * FROM global_inventory")).fetchall()
-    #Sanity check if purchase will work.
-    containsSmallGreenBarrel = False
+        inventory = connection.execute(sqlalchemy.text("SELECT num_green_potions, gold FROM global_inventory")).fetchall()
+    #check if each barrel 
     for barrel in wholesale_catalog:
-        if (barrel.sku == "SMALL_GREEN_BARREL" and barrel.quantity > 0): containsSmallGreenBarrel = True
-    #put in purchase quantity
-    if (inventory[0][1] < 10 and containsSmallGreenBarrel):
-        quantity = 1
+        if (barrel.sku == "SMALL_GREEN_BARREL" and barrel.quantity > 0 and barrel.price <= inventory[0][1] and inventory[0][0] < 10):
+            barrelPlan.append({
+                "sku": barrel.sku,
+                "quantity": 1
+            })
+            
     """Description of order"""
-    print(f"quantity: {quantity}")
-    return [
-        {
-            "sku": "SMALL_GREEN_BARREL",
-            "quantity": quantity,
-        }
-    ]
+    print(f"plan: {barrelPlan}")
+    return barrelPlan
 
