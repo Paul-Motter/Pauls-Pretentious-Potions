@@ -26,10 +26,11 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
         inventory = connection.execute(sqlalchemy.text("SELECT ml_green_potions, gold FROM global_inventory")).fetchall()
     #assumes row 1 in green potions and that the barrels are all green.
     for barrel in barrels_delivered:  
-        inventory[0][0] += barrel.ml_per_barrel*barrel.quantity
-        inventory[0][1] -= barrel.price*barrel.quantity
+#        inventory[0][0] += barrel.ml_per_barrel*barrel.quantity            Why doesn't this work?!?!? says type doesn't support combined assignment.
+        newmlGreen = inventory[0][0] + barrel.ml_per_barrel*barrel.quantity
+        newTotalGold = inventory[0][1] - barrel.price*barrel.quantity
     with db.engine.begin() as connection:
-        connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET ml_green_potions = {inventory[0][0]}, gold = {inventory[0][1]}"))
+        connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET ml_green_potions = {newmlGreen}, gold = {newTotalGold}"))
     """Status of order"""
     print(f"barrels delievered: {barrels_delivered} order_id: {order_id}")
 
