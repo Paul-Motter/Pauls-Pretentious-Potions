@@ -78,7 +78,7 @@ class Customer(BaseModel):
 def post_visits(visit_id: int, customers: list[Customer]):
     """Which customers visited the shop today?"""
     with db.engine.begin() as connection:
-        post_time
+        #post_time
         for one_customer in customers:
             connection.execute(sqlalchemy.text("INSERT INTO all_visitor_log (customer_name, character_class, level) VALUES ()"))
 
@@ -100,7 +100,7 @@ class CartItem(BaseModel):
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
-    cart_item.
+    #cart_item.
     return "OK"
 
 
