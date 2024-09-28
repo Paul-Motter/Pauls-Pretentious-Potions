@@ -76,19 +76,24 @@ class Customer(BaseModel):
 
 @router.post("/visits/{visit_id}")
 def post_visits(visit_id: int, customers: list[Customer]):
-    """Which customers visited the shop today?""" 
+    """Request Body"""
+    print(f"Customers: {customers}")
+
+    """Log which customers visited the shop and when.""" 
     #logging all customers with customer info and time.   
     with db.engine.begin() as connection:
         time = connection.execute(sqlalchemy.text("SELECT current_day, current_hour FROM shop_info")).fetchone()
         for one_customer in customers:
             connection.execute(sqlalchemy.text(f"INSERT INTO all_visitors_log (customer_name, character_class, level, day, hour) VALUES ('{one_customer.customer_name}','{one_customer.character_class}',{one_customer.level},'{time[0]}',{time[1]})"))
-    print(f"Customers Logged: {customers}")
-
+    
     return "OK"
 
 
 @router.post("/")
 def create_cart(new_cart: Customer):
+    """Request body"""
+    #simply a single customer who is creating a cart.
+
     """Creates a cart in the current_cart_list"""
     with db.engine.begin() as connection:
         carts = connection.execute(sqlalchemy.text("SELECT cart_id FROM current_cart_list")).fetchall()
@@ -99,6 +104,8 @@ def create_cart(new_cart: Customer):
 
         connection.execute(sqlalchemy.text(f"INSERT INTO current_cart_list (cart_id) VALUES ({cart_id})"))
         
+    """Response"""
+    #A unique id for the cart.
     return {"cart_id": cart_id}
 
 
@@ -108,10 +115,14 @@ class CartItem(BaseModel):
 
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
+    """Request Body"""
+    #gives a cart_id from before with an item and cart_item.quantity for that item.
+    print(f"cart_id: {cart_id}, item_sku: {item_sku}, cart_item: {cart_item}")
+
     """Finds the cart_id and updates with the selected purchase of the customer"""
     with db.engine.begin() as connection:
         connection.execute(sqlalchemy.text(f"UPDATE current_cart_list SET item_sku = '{item_sku}', quantity = {cart_item.quantity} WHERE cart_id = {cart_id}"))
-    #cart_item.
+    
     return "OK"
 
 
@@ -120,6 +131,10 @@ class CartCheckout(BaseModel):
 
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
+    """Request Body"""
+    #gives a cart_id and cart_checkout.
+    print(f"cart_id: {cart_id}, cart_checkout: {cart_checkout}")
+
     """gets orderID and quantity and then updates gold and potion inventory. assumes green potions are bought and price is always 50"""
     with db.engine.begin() as connection:
         #get current cart order
@@ -131,6 +146,6 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         #get gold and update 
         #assumes buying green potion worth 50 gold.
         connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET num_green_potions = {inventory[0][0] - cart[1]}, gold = {inventory[0][1] + cart[1]*50}"))
-    print(cart_checkout.payment)
 
+    """Response"""
     return {"total_potions_bought": cart[1], "total_gold_paid": cart[1]*50}

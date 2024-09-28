@@ -27,6 +27,6 @@ def get_catalog():
             "potion_type": [0, 100, 0, 0],
         })
 
-    print(f"catalogueEntries: {catalogue_entries}")
-
+    """Reponse"""
+    print(f"My Catalogue: {catalogue_entries}")
     return catalogue_entries

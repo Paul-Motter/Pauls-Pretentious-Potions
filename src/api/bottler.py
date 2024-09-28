@@ -17,6 +17,10 @@ class PotionInventory(BaseModel):
 
 @router.post("/deliver/{order_id}")
 def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int):
+    """Request Body"""
+    print(f"potions_delivered: {potions_delivered}")
+    print(f"order_id: {order_id}")
+
     """Update inventory with the new potions and spent ml"""
     with db.engine.begin() as connection:
         inventory = connection.execute(sqlalchemy.text("SELECT num_green_potions, ml_green_potions FROM global_inventory")).fetchall()
@@ -25,9 +29,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
         with db.engine.begin() as connection:
             connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET num_green_potions = {inventory[0][0] + potion_delivery.quantity}, ml_green_potions = {inventory[0][1] - potion_delivery.quantity*100}"))
 
-    print(f"potions delievered: {potions_delivered} order_id: {order_id}")
-
-    return "OK"
+    return "Done"
 
 #creates a plan to mix an amount of potions each with a potion_type and quanity.
 @router.post("/plan")
@@ -48,6 +50,8 @@ def get_bottle_plan():
     # green potion to add.
     # Expressed in integers from 1 to 100 that must sum up to 100.
     # Initial logic: bottle all barrels into red potions.
+    """Response"""
+    print(f"potion_plan: {potion_plan}")
     return potion_plan
 
 if __name__ == "__main__":

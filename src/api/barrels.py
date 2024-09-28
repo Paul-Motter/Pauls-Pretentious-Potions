@@ -21,6 +21,10 @@ class Barrel(BaseModel):
 
 @router.post("/deliver/{order_id}")
 def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
+    """Request Body"""
+    print(f"barrels_delivered: {barrels_delivered}")
+    print(f"order_id: {order_id}")
+
     """Checks each delivery to update ml stored and subtract price. Assumes all barrels are green potions."""
     with db.engine.begin() as connection:
         inventory = connection.execute(sqlalchemy.text("SELECT ml_green_potions, gold FROM global_inventory")).fetchall()
@@ -31,9 +35,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
         new_total_gold = inventory[0][1] - barrel.price*barrel.quantity
     with db.engine.begin() as connection:
         connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET ml_green_potions = {new_ml_green}, gold = {new_total_gold}"))
-    """Status of order"""
-    print(f"barrels delievered: {barrels_delivered} order_id: {order_id}")
-
+   
     return "OK"
 
 
@@ -44,7 +46,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 #           "sku": String
 #           "quantity": int
 # }]
+    """Request Body"""
     print(f"wholesale_catalog: {wholesale_catalog}")
+
     """Purchases based solely on inventory status."""
     barrel_plan = []
     with db.engine.begin() as connection:
@@ -59,6 +63,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 }
             )
             
-    """Description of order"""
+    """Response"""
     print(f"barrel_plan: {barrel_plan}")
     return barrel_plan
