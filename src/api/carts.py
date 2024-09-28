@@ -76,10 +76,13 @@ class Customer(BaseModel):
 
 @router.post("/visits/{visit_id}")
 def post_visits(visit_id: int, customers: list[Customer]):
-    """
-    Which customers visited the shop today?
-    """
-    print(customers)
+    """Which customers visited the shop today?"""
+    with db.engine.begin() as connection:
+        post_time
+        for one_customer in customers:
+            connection.execute(sqlalchemy.text("INSERT INTO all_visitor_log (customer_name, character_class, level) VALUES ()"))
+
+    print(f"Customers Logged: {customers}")
 
     return "OK"
 
@@ -97,7 +100,7 @@ class CartItem(BaseModel):
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
-
+    cart_item.
     return "OK"
 
 
@@ -107,5 +110,6 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
+    cart_checkout.payment
 
     return {"total_potions_bought": 1, "total_gold_paid": 75}
