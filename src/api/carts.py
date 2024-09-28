@@ -76,12 +76,12 @@ class Customer(BaseModel):
 
 @router.post("/visits/{visit_id}")
 def post_visits(visit_id: int, customers: list[Customer]):
-    """Which customers visited the shop today?"""
+    """Which customers visited the shop today?""" 
+    #logging all customers with customer info and time.   
     with db.engine.begin() as connection:
-        #post_time
+        time = connection.execute(sqlalchemy.text("SELECT current_day, current_hour FROM shop_info")).fetchone()
         for one_customer in customers:
-            connection.execute(sqlalchemy.text("INSERT INTO all_visitor_log (customer_name, character_class, level) VALUES ()"))
-
+            connection.execute(sqlalchemy.text(f"INSERT INTO all_visitor_log (customer_name, character_class, level, day, hour) VALUES ({one_customer.customer_name},{one_customer.character_class},{one_customer.level},{time[0]},{time[1]})"))
     print(f"Customers Logged: {customers}")
 
     return "OK"

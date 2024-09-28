@@ -16,8 +16,9 @@ class Timestamp(BaseModel):
 
 @router.post("/current_time")
 def post_time(timestamp: Timestamp):
-    """
-    Share current time.
-    """
+    """Share current time and save in shop_info"""
+    with db.engine.begin() as connection:
+        connection.execute(sqlalchemy.text(f"UPDATE shop_info SET current_day = {timestamp.day}, current_hour = {timestamp.hour}"))
+
     return "OK"
 
