@@ -23,7 +23,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
     #assumes all potions in delivery are green so all ml and potions update the green.
     for potionDelivery in potions_delivered:
         with db.engine.begin() as connection:
-            connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET num_green_potions = {inventory[0][0] + potionDelivery.quantity}, ml_green_potions{inventory[0][1] - potionDelivery.quantity*100}"))
+            connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET num_green_potions = {inventory[0][0] + potionDelivery.quantity}, ml_green_potions = {inventory[0][1] - potionDelivery.quantity*100}"))
 
     print(f"potions delievered: {potions_delivered} order_id: {order_id}")
 
@@ -36,7 +36,7 @@ def get_bottle_plan():
     potionPlan = []
     with db.engine.begin() as connection:
         inventory = connection.execute(sqlalchemy.text("SELECT num_green_potions, ml_green_potions FROM global_inventory")).fetchall()
-    greenPotionPotential = inventory[0][1]/100
+    greenPotionPotential = inventory[0][1]//100
     if (inventory[0][0] < 50 and greenPotionPotential > 0 ):
         potionPlan.append({
             "potion_type": [0, 100, 0, 0],
