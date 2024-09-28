@@ -52,12 +52,13 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     #check if each barrel 
     for barrel in wholesale_catalog:
         if (barrel.sku == "SMALL_GREEN_BARREL" and barrel.quantity > 0 and barrel.price <= inventory[0][1] and inventory[0][0] < 10):
-            barrel_plan.append({
-                "sku": barrel.sku,
-                "quantity": 1
-            })
+            barrel_plan.append(
+                {
+                    "sku": barrel.sku,
+                    "quantity": 1,
+                }
+            )
             
     """Description of order"""
     print(f"barrel_plan: {barrel_plan}")
     return barrel_plan
-

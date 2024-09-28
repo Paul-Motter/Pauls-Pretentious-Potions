@@ -18,12 +18,12 @@ def get_catalog():
     catalogue_entries = []
     with db.engine.begin() as connection:
         inventory = connection.execute(sqlalchemy.text("SELECT num_green_potions from global_inventory")).fetchall()
-    if _(inventory[0][0] != 0):
+    if (inventory[0][0] != 0):
         catalogue_entries.append({
             "sku": "GREEN100",
             "name": "green_potion",
             "quantity": inventory[0][0],
-            "price": 75,
+            "price": 50,
             "potion_type": [0, 100, 0, 0],
         })
 

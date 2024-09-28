@@ -1,0 +1,35 @@
+/barrels/plan request body all are type Barrel
+[
+    {"sku":"MEDIUM_RED_BARREL", "ml_per_barrel":2500, "potion_type":[1, 0, 0, 0], "price":250, "quantity":10}, 
+    {"sku":"SMALL_RED_BARREL", "ml_per_barrel":500, "potion_type":[1, 0, 0, 0], "price":100, "quantity":10}, 
+    {"sku":"MEDIUM_GREEN_BARREL", "ml_per_barrel":2500, "potion_type":[0, 1, 0, 0], "price":250, "quantity":10}, 
+    {"sku":"SMALL_GREEN_BARREL", "ml_per_barrel":500, "potion_type":[0, 1, 0, 0], "price":100, "quantity":10}, 
+    {"sku":"MEDIUM_BLUE_BARREL", "ml_per_barrel":2500, "potion_type":[0, 0, 1, 0], "price":300, "quantity":10}, 
+    {"sku":"SMALL_BLUE_BARREL", "ml_per_barrel":500, "potion_type":[0, 0, 1, 0], "price":120, "quantity":10}, 
+    {"sku":"MINI_RED_BARREL", "ml_per_barrel":200, "potion_type":[1, 0, 0, 0], "price":60, "quantity":1}, 
+    {"sku":"MINI_GREEN_BARREL", "ml_per_barrel":200, "potion_type":[0, 1, 0, 0], "price":60, "quantity":1}, 
+    {"sku":"MINI_BLUE_BARREL", "ml_per_barrel":200, "potion_type":[0, 0, 1, 0], "price":60, "quantity":1}, 
+    {"sku":"LARGE_DARK_BARREL", "ml_per_barrel":10000, "potion_type":[0, 0, 0, 1], "price":750, "quantity":10}, 
+    {"sku":"LARGE_BLUE_BARREL", "ml_per_barrel":10000, "potion_type":[0, 0, 1, 0], "price":600, "quantity":30}, 
+    {"sku":"LARGE_GREEN_BARREL", "ml_per_barrel":10000, "potion_type":[0, 1, 0, 0], "price":400, "quantity":30}, 
+    {"sku":"LARGE_RED_BARREL", "ml_per_barrel":10000, "potion_type":[1, 0, 0, 0], "price":500, "quantity":30}
+]
+
+/barrels/deliver/{order_id} request body
+[
+    {"sku":"SMALL_GREEN_BARREL", "ml_per_barrel":500, "potion_type":[0, 1, 0, 0], "price":100, "quantity":1}, 
+]
+
+/carts/visits/22772 all are type Customer 
+[
+    {"customer_name":"Octavius Thunderstrike", "character_class":"Paladin", "level":3}, 
+    {"customer_name":"Zen Valerian Moonshadow", "character_class":"Monk", "level":5}, 
+    {"customer_name":"Olthisir", "character_class":"Ranger", "level":1}, 
+    {"customer_name":"Nbupoymok", "character_class":"Monk", "level":2}, 
+    {"customer_name":"Conqueror Melisande Eaglesong", "character_class":"Fighter", "level":18}, 
+    {"customer_name":"Xanthia Frostbane", "character_class":"Rogue", "level":3}, 
+    {"customer_name":"Isolde Silvercrest", "character_class":"Monk", "level":2}, 
+    {"customer_name":"Transcendent Master Zephyrine Eaglesong", "character_class":"Monk", "level":20}, 
+    {"customer_name":"Balthazar Ravenwind", "character_class":"Paladin", "level":3}, 
+    {"customer_name":"Gideon Hawthorne", "character_class":"Monk", "level":2}
+]
