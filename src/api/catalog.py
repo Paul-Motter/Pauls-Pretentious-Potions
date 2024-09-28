@@ -15,11 +15,11 @@ router = APIRouter()
 @router.get("/catalog/", tags=["catalog"])
 def get_catalog():
     """Each unique item combination must have only a single price. max of 6 potion SKUs offered at one time."""
-    catalogueEntries = []
+    catalogue_entries = []
     with db.engine.begin() as connection:
         inventory = connection.execute(sqlalchemy.text("SELECT num_green_potions from global_inventory")).fetchall()
 
-    catalogueEntries.append({
+    catalogue_entries.append({
         "sku": "GREEN100",
         "name": "green_potion",
         "quantity": inventory[0][0],
@@ -28,6 +28,6 @@ def get_catalog():
 
     })
 
-    print(f"catalogueEntries: {catalogueEntries}")
+    print(f"catalogueEntries: {catalogue_entries}")
 
-    return catalogueEntries
+    return catalogue_entries
