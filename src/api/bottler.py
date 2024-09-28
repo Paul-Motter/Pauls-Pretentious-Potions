@@ -22,11 +22,14 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
 
     return "OK"
 
+#creates a plan to mix an amount of potions each with a potion_type and quanity.
 @router.post("/plan")
 def get_bottle_plan():
-    """
-    Go from barrel to bottle.
-    """
+    """Go from barrel to bottle."""
+    with db.engine.begin() as connection:
+        inventory = connection.execute(sqlalchemy.text("SELECT num_green_potions, ml_green_potions FROM global_inventory")).fetchall()
+
+
 
     # Each bottle has a quantity of what proportion of red, blue, and
     # green potion to add.

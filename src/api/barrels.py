@@ -43,6 +43,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 #           "sku": String
 #           "quantity": int
 # }]
+    print(f"wholesale_catalog: {wholesale_catalog}")
     """Purchases based solely on inventory status."""
     barrelPlan = []
     with db.engine.begin() as connection:
@@ -56,6 +57,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             })
             
     """Description of order"""
-    print(f"plan: {barrelPlan}")
+    print(f"barrelPlan: {barrelPlan}")
     return barrelPlan
 
