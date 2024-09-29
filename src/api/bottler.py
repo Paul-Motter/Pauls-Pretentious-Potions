@@ -42,7 +42,7 @@ def get_bottle_plan():
     if (inventory[0][0] < 50 and green_potion_potential > 0 ):
         potion_plan.append({
             "potion_type": [0, 100, 0, 0],
-            "quanitity": green_potion_potential if inventory[0][0]+green_potion_potential <= 50 else 50-inventory[0][0],
+            "quantity": green_potion_potential if inventory[0][0]+green_potion_potential <= 50 else 50-inventory[0][0],
         })
 
 

@@ -1,6 +1,6 @@
 Order of operations per tick:
 
-time 1:10pm
+time 1:10 pm
 POST /info/current_time
 POST /admin/reset                    #only on startup
 POST /barrels/plan
@@ -9,9 +9,13 @@ GET  /inventory/audit (check)
 GET  /catalogue/
 POST /barrels/deliver
 
-time 3:10
+time 3:10 pm
 POST /info/current_time
 POST /bottler/plan
 GET  /inventory/audit
 GET  /catalog/
 POST /carts/visits/22772
+
+Burned Shop to Ground
+
+time 5:10 pm
