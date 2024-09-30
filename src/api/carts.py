@@ -122,7 +122,6 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """Finds the cart_id and updates with the selected purchase of the customer"""
     with db.engine.begin() as connection:
         connection.execute(sqlalchemy.text(f"UPDATE current_cart_list SET item_sku = '{item_sku}', quantity = {cart_item.quantity} WHERE cart_id = {cart_id}"))
-    
     return "OK"
 
 

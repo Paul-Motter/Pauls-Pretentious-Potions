@@ -1,6 +1,15 @@
 Order of operations per tick:
+-Barreler plan (Only every other)
+-Bottler plan
+-Catalog 
+-Bottler deliver
+-Barrels deliver
+-Customers visit.
+    -carts are created.
+    -carts are filled.
+    -carts are checked out.
 
-time 1:10 pm
+ - Time Bloomday 1:10 pm
 POST /info/current_time
 POST /admin/reset                    #only on startup
 POST /barrels/plan
@@ -9,7 +18,7 @@ GET  /inventory/audit (check)
 GET  /catalogue/
 POST /barrels/deliver
 
-time 3:10 pm
+ - Time Bloomday 3:10 pm
 POST /info/current_time
 POST /bottler/plan
 GET  /inventory/audit
@@ -18,4 +27,30 @@ POST /carts/visits/22772
 
 Burned Shop to Ground
 
-time 5:10 pm
+ - Time Arcanaday 5:30pm 
+POST /info/current_time
+POST /bottler/plan
+GET  /inventory/audit
+GET  /catalog/
+POST /barrels/plan
+POST /carts/visits/22785
+POST /carts/
+POST /carts/1/itmes/GREEN100 payment='gold card'
+POST /carts/1/checkout
+-bottler, Sanity check, barreler, visits.
+
+ - Time Arcanaday 7:15pm
+ POST /info/current_time
+ POST /bottler/plan
+ GET  /inventory/audit
+ GET  /catalog/
+ -bottler, Sanity check.
+
+  - Time Arcanaday 9:10pm
+  POST /info/current_time
+  POST /bottler/plan
+  GET  /catalog/
+  GET  /inventory/audit
+  POST /barrels/plan
+  POST /barrels/deliver
+  -bottler, Sanity, barrels,
