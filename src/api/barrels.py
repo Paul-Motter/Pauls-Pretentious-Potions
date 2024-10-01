@@ -50,7 +50,24 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(f"wholesale_catalog: {wholesale_catalog}")
 
     """Purchases based solely on inventory status."""
+    #How much of a full inventory should be each potiontype.
     barrel_plan = []
+    percent_type_full = [0,0,0,0]
+    perc_green = 1/4
+    perc_red = 1/4
+    perc_blue = 1/4
+    perc_dark = 1/4
+    subtotal = 0
+
+    #Get information about current shop and inventory status.
+    with db.engine.begin() as connection:
+        ml_inventory = connection.execute(sqlalchemy.text("SELECT potion_type, ml_sotored FROM ml_storage")).fetchall
+        shop_info = connection.execute(sqlalchemy.text("SELECT gold, ml_capacity FROM shop_info")).fetchone
+
+    #with information make informed decision about what to get.
+    for ml_type in ml_inventory:
+        percent_type_full[ml_type[0]] = ml_type[1]/shop_info[1] #percent of total capacity is that type.
+
     with db.engine.begin() as connection:
         inventory = connection.execute(sqlalchemy.text("SELECT num_green_potions, gold FROM global_inventory")).fetchall()
     #check if each barrel 
