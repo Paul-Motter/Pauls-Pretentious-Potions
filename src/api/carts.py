@@ -140,7 +140,8 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         for item in checkout_list:
             total_bought += item[4]
             total_paid += item[4]*item[5]
-            connection.execute(sqlalchemy.text(f"UPDATE potion_storage SET stock = stock - {item[4]} WHERE red = {item[0]} AND green = {item[1]} AND blue = {item[2]} AND dark = {item[3]}"))
+            connection.execute(sqlalchemy.text(f"UPDATE potion_storage SET stock = stock - {item[4]}, total_sold = total_sold + {item[4]} WHERE red = {item[0]} AND green = {item[1]} AND blue = {item[2]} AND dark = {item[3]}"))
         connection.execute(sqlalchemy.text(f"UPDATE shop_info SET gold = gold + {total_paid}"))
+        connection.execute(sqlalchemy.text(f"INSERT INTO payment_type (payment) VALUES ('{cart_checkout.payment}')"))
     """Response"""
     return {"total_potions_bought": total_bought, "total_gold_paid": total_paid}

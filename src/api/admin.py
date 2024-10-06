@@ -23,6 +23,7 @@ def reset():
         connection.execute(sqlalchemy.text("DELETE FROM customers"))
         connection.execute(sqlalchemy.text("DELETE FROM time"))
         connection.execute(sqlalchemy.text("DELETE FROM my_catalog"))
+        connection.execute(sqlalchemy.text("DELETE FROM payment_type"))
         connection.execute(sqlalchemy.text("DELETE FROM potion_storage"))
         connection.execute(sqlalchemy.text("INSERT INTO potion_storage (red, green, blue, dark, sku, stock, total_sold, name, price) VALUES (0, 0, 0, 100, '0R_0G_0B_100D', 0, 0, 'Dark_100', 0), (0, 0, 100, 0, '0R_0G_100B_0D', 0, 0, 'Blue_100', 0), (0, 100, 0, 0, '0R_100G_0B_0D', 0, 0, 'Green_100', 0), (100, 0, 0, 0, '100R_0G_0B_0D', 0, 0, 'Red_100', 0);"))
         #connection.execute(sqlalchemy.text("DELETE FROM potion_storage WHERE red != 100 AND green != 100 AND blue != 100 AND dark != 100"))
