@@ -21,13 +21,13 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
     print(f"potions_delivered: {potions_delivered}")
     print(f"order_id: {order_id}")
 
-    """Update inventory with the new potions and spent ml"""
+    """Update inventory with the new potions and"""
     with db.engine.begin() as connection:
-        inventory = connection.execute(sqlalchemy.text("SELECT num_green_potions, ml_green_potions FROM global_inventory")).fetchall()
-    #assumes all potions in delivery are green so all ml and potions update the green.
-    for potion_delivery in potions_delivered:
-        with db.engine.begin() as connection:
-            connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET num_green_potions = {inventory[0][0] + potion_delivery.quantity}, ml_green_potions = {inventory[0][1] - potion_delivery.quantity*100}"))
+        for potion in potions_delivered:
+            for i in range(4): #for each of the 4 potion_type in potion
+                connection.execute(sqlalchemy.text(f"UPDATE ml_storage SET ml_stored = ml_stored - {potion.potion_type[i]*potion.quantity} WHERE potion_type = {i}"))
+            #update to new current stock with previous stock plus delivered. 
+            connection.execute(sqlalchemy.text(f"UPDATE potion_storage SET stock = stock + {potion.quantity} WHERE (red, green, blue, dark) = ({potion.potion_type[0]}, {potion.potion_type[1]}, {potion.potion_type[2]}, {potion.potion_type[3]})"))
 
     return "Done"
 
@@ -36,20 +36,21 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
 def get_bottle_plan():
     """Go from barrel to bottle."""
     potion_plan = []
+
+    potion_type = [0,0,0,0]
     with db.engine.begin() as connection:
-        inventory = connection.execute(sqlalchemy.text("SELECT num_green_potions, ml_green_potions FROM global_inventory")).fetchall()
-    green_potion_potential = inventory[0][1]//100
-    if (inventory[0][0] < 50 and green_potion_potential > 0 ):
-        potion_plan.append({
-            "potion_type": [0, 100, 0, 0],
-            "quantity": green_potion_potential if inventory[0][0]+green_potion_potential <= 50 else 50-inventory[0][0],
-        })
+        ml_storage = connection.execute(sqlalchemy.text("SELECT ml_stored FROM ml_storage ORDER BY potion_type ASC")).fetchall()
+        max_potion_quantity = connection.execute(sqlalchemy.text("SELECT potion_capacity FROM shop_info")).fetchone()[0]//4 #determins the max quantity of each basic potion type
+        for i in range(4): #for each basic potion type
+            potion_type[i] = 100
+            potion = connection.execute(sqlalchemy.text(f"SELECT stock FROM potion_storage WHERE red = {potion_type[0]} AND green = {potion_type[1]} AND blue = {potion_type[2]} AND dark = {potion_type[3]}")).fetchone()
+            if potion[0] < max_potion_quantity and ml_storage[i][0] >= 100:
+                potion_plan.append({
+                                    "potion_type": potion_type.copy(),
+                                    "quantity": ml_storage[i][0]//100 if potion[0]+(ml_storage[i][0]//100) <= max_potion_quantity else max_potion_quantity-potion[0] 
+                })
+            potion_type[i] = 0
 
-
-    # Each bottle has a quantity of what proportion of red, blue, and
-    # green potion to add.
-    # Expressed in integers from 1 to 100 that must sum up to 100.
-    # Initial logic: bottle all barrels into red potions.
     """Response"""
     print(f"potion_plan: {potion_plan}")
     return potion_plan

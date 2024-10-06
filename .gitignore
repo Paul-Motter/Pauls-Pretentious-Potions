@@ -4,3 +4,7 @@
 __pycache__
 .env
 info.log
+notes.txt
+temp.txt
+TestCases.txt
+testmain.txt

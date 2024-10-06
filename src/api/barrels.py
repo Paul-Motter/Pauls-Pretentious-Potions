@@ -1,3 +1,7 @@
+#my imports
+import functools
+import time
+#his imports
 import sqlalchemy
 from src import database as db
 from fastapi import APIRouter, Depends
@@ -27,59 +31,91 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
 
     """Checks each delivery to update ml stored and subtract price. Assumes all barrels are green potions."""
     with db.engine.begin() as connection:
-        inventory = connection.execute(sqlalchemy.text("SELECT ml_green_potions, gold FROM global_inventory")).fetchall()
-    #assumes row 1 in green potions and that the barrels are all green.
-    for barrel in barrels_delivered:  
-#        inventory[0][0] += barrel.ml_per_barrel*barrel.quantity            Why doesn't this work?!?!? says type doesn't support combined assignment.
-        new_ml_green = inventory[0][0] + barrel.ml_per_barrel*barrel.quantity
-        new_total_gold = inventory[0][1] - barrel.price*barrel.quantity
-    with db.engine.begin() as connection:
-        connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET ml_green_potions = {new_ml_green}, gold = {new_total_gold}"))
-   
-    return "OK"
+        for barrel in barrels_delivered:  
+            storage_index = barrel.potion_type.index(1) #which index in potion type has the value 1.
+            #update ml_storage with current barrel.
+            connection.execute(sqlalchemy.text(f"UPDATE ml_storage SET ml_stored = ml_stored + {barrel.ml_per_barrel*barrel.quantity} WHERE potion_type = {storage_index}"))
+             #update gold with current barrel.
+            connection.execute(sqlalchemy.text(f"UPDATE shop_info SET gold = gold + {barrel.price*barrel.quantity}"))
 
+    return "OK"
 
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
-# Gets called once a day
-# return [ {
-#           "sku": String
-#           "quantity": int
-# }]
     """Request Body"""
     print(f"wholesale_catalog: {wholesale_catalog}")
 
-    """Purchases based solely on inventory status."""
+    """
+    Does not make purchases based on the day, hour.
+    """
+
+    """purchases based solely on inventory status."""
     #How much of a full inventory should be each potiontype.
     barrel_plan = []
-    percent_type_full = [0,0,0,0]
-    perc_green = 1/4
-    perc_red = 1/4
-    perc_blue = 1/4
-    perc_dark = 1/4
-    subtotal = 0
 
     #Get information about current shop and inventory status.
     with db.engine.begin() as connection:
-        ml_inventory = connection.execute(sqlalchemy.text("SELECT potion_type, ml_sotored FROM ml_storage")).fetchall
-        shop_info = connection.execute(sqlalchemy.text("SELECT gold, ml_capacity FROM shop_info")).fetchone
+        potion_storage = connection.execute(sqlalchemy.text("SELECT stock FROM potion_storage")).fetchall()
+        ml_storage = connection.execute(sqlalchemy.text("SELECT potion_type, ml_stored FROM ml_storage ORDER BY potion_type ASC")).fetchall()
+        shop_info = connection.execute(sqlalchemy.text("SELECT gold, ml_capacity, potion_capacity FROM shop_info")).fetchone()
+
+    #keeping track of multiple barrel purchase stats.
+    subtotal_gold = 0
+    purchased_ml = [0, 0, 0, 0]
+    black_list = [False, False, False, False]
+    
+    #buying_offset_ml delays buying barrels for a specific type by so many ml. This ensures the shop doesn't only top off mls but buys builk for better price/ml
+    if shop_info[1] >= 60000: buying_offset_ml = 10000
+    elif shop_info[1] >= 20000: buying_offset_ml = 2500
+    else: buying_offset_ml = 0
+    perc_type = 0.25 #each potion type shouldn't take up more than this in sotrage.
 
     #with information make informed decision about what to get.
-    for ml_type in ml_inventory:
-        percent_type_full[ml_type[0]] = ml_type[1]/shop_info[1] #percent of total capacity is that type.
+    #if total ml stored or total potions stored is at 90% capacity don't buy anything and save up for shop upgrade. might want to change to compare to a fixed value in the future
+    if functools.reduce(lambda total, current: total + current[1], ml_storage, 0) >= 0.90*shop_info[1] or functools.reduce(lambda total, current: total + current[0], potion_storage, 0) >= 0.90*shop_info[2]:
+        return barrel_plan 
 
-    with db.engine.begin() as connection:
-        inventory = connection.execute(sqlalchemy.text("SELECT num_green_potions, gold FROM global_inventory")).fetchall()
-    #check if each barrel 
-    for barrel in wholesale_catalog:
-        if (barrel.sku == "SMALL_GREEN_BARREL" and barrel.quantity > 0 and barrel.price <= inventory[0][1] and inventory[0][0] < 10):
-            barrel_plan.append(
-                {
-                    "sku": barrel.sku,
-                    "quantity": 1,
-                }
-            )
-            
-    """Response"""
+    #purchase barrels by lowest type currently stocked and highest ml barrel currently affordable. recheck order and gold after every "purchase" 
+    #sort catalogue by potion_type and then ml_per_barrel.
+    wholesale_catalog = sorted(wholesale_catalog, key=lambda b: (b.potion_type, b.ml_per_barrel), reverse = True)
+    
+    lowest_index = 0
+    while not all(black_list): #if all of blacklist is True then break out of while.
+        ml_storage = sorted(ml_storage, key=lambda a: a[1] + purchased_ml[a[0]])
+        for i in range(len(ml_storage)):
+            if black_list[ml_storage[i][0]] == False:
+                lowest_index = i
+                break
+        
+        barrel_purchased = False 
+        for barrel in wholesale_catalog:
+            if(barrel.potion_type[ml_storage[lowest_index][0]] == 1 and #barrel is correct type
+               subtotal_gold + barrel.price <= shop_info[0] and #shop has gold for the purchase
+               ml_storage[lowest_index][1] + purchased_ml[ml_storage[lowest_index][0]] + barrel.ml_per_barrel <=  perc_type*shop_info[1]-buying_offset_ml):  #purchase doesn't overfill the potion types alloted space. 
+                if (functools.reduce(lambda a,b, barrel_sku = barrel.sku: a or b.get("sku") == barrel_sku, barrel_plan, False)):#if barrel is already in the plan.
+                    for i in range(len(barrel_plan)): #get the index of barrel.
+                        if barrel_plan[i].get("sku") == barrel.sku: plan_index = i
+                    if barrel.quantity > barrel_plan[plan_index].get("quantity"): #PURCHASE: catalog entry has enough quantity.
+                        barrel_plan[plan_index].update({"quantity": barrel_plan[plan_index].get("quantity") + 1}) #update the quantity of the barrel in barrel_plan.
+                        barrel_purchased = True
+                        subtotal_gold += barrel.price
+                        purchased_ml[ml_storage[lowest_index][0]] += barrel.ml_per_barrel
+                        break
+                    else:
+                        black_list[ml_storage[lowest_index][0]] = True #purchased all of a specific sku so don't buy more.
+                        break #no need to check other barrels to buy 1 since I've bought all of one sku already and the potion_type is already on the balck_list
+                else:
+                    barrel_plan.append({
+                        "sku": barrel.sku,
+                        "quantity": 1,
+                    })
+                    barrel_purchased = True
+                    subtotal_gold += barrel.price
+                    purchased_ml[ml_storage[lowest_index][0]] += barrel.ml_per_barrel
+                    break
+        if barrel_purchased == False:
+            black_list[ml_storage[lowest_index][0]] = True
+    
     print(f"barrel_plan: {barrel_plan}")
     return barrel_plan
+ 

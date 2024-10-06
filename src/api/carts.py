@@ -82,9 +82,9 @@ def post_visits(visit_id: int, customers: list[Customer]):
     """Log which customers visited the shop and when.""" 
     #logging all customers with customer info and time.   
     with db.engine.begin() as connection:
-        time = connection.execute(sqlalchemy.text("SELECT current_day, current_hour FROM shop_info")).fetchone()
-        for one_customer in customers:
-            connection.execute(sqlalchemy.text(f"INSERT INTO all_visitors_log (customer_name, character_class, level, day, hour) VALUES ('{one_customer.customer_name}','{one_customer.character_class}',{one_customer.level},'{time[0]}',{time[1]})"))
+        time = connection.execute(sqlalchemy.text("SELECT date_id FROM time ORDER BY date_id DESC LIMIT 1")).fetchone()
+        for customer in customers:
+            connection.execute(sqlalchemy.text(f"INSERT INTO customers (customer_id, customer_name, character_class, level, date_id) VALUES ({visit_id},'{customer.customer_name}','{customer.character_class}',{customer.level}, {time[0]})"))
     
     return "OK"
 
@@ -96,17 +96,15 @@ def create_cart(new_cart: Customer):
 
     """Creates a cart in the current_cart_list"""
     with db.engine.begin() as connection:
-        carts = connection.execute(sqlalchemy.text("SELECT cart_id FROM current_cart_list")).fetchall()
-        if len(carts) == 0: #if no carts then first ID is 1.
-            cart_id = 1
-        else:
-            cart_id = carts[len(carts)-1][0]+1 #if there are previous carts then the ID is the last ID plus 1.
-
-        connection.execute(sqlalchemy.text(f"INSERT INTO current_cart_list (cart_id) VALUES ({cart_id})"))
+        last_cart_id = connection.execute(sqlalchemy.text("SELECT cart_id FROM customers WHERE cart_id IS NOT NULL ORDER BY cart_id DESC LIMIT 1")).fetchone()
+        #for the first cart let the id be 1.
+        if last_cart_id is None:
+            last_cart_id = [0]
+        connection.execute(sqlalchemy.text(f"UPDATE customers SET cart_id = {last_cart_id[0]+1} WHERE customer_name = '{new_cart.customer_name}' AND character_class = '{new_cart.character_class}' AND level = {new_cart.level}"))
         
     """Response"""
     #A unique id for the cart.
-    return {"cart_id": cart_id}
+    return {"cart_id": [last_cart_id[0]+1]}
 
 
 class CartItem(BaseModel):
@@ -121,7 +119,7 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
 
     """Finds the cart_id and updates with the selected purchase of the customer"""
     with db.engine.begin() as connection:
-        connection.execute(sqlalchemy.text(f"UPDATE current_cart_list SET item_sku = '{item_sku}', quantity = {cart_item.quantity} WHERE cart_id = {cart_id}"))
+        connection.execute(sqlalchemy.text(f"INSERT INTO cart_items (sku, quantity, cart_id) VALUES ('{item_sku}', {cart_item.quantity}, {cart_id})"))
     return "OK"
 
 
@@ -136,15 +134,13 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
 
     """gets orderID and quantity and then updates gold and potion inventory. assumes green potions are bought and price is always 50"""
     with db.engine.begin() as connection:
-        #get current cart order
-        cart = connection.execute(sqlalchemy.text(f"SELECT item_sku, quantity FROM current_cart_list WHERE cart_id = {cart_id}")).fetchone()
-        #delete the current order
-        connection.execute(sqlalchemy.text(f"DELETE FROM current_cart_list WHERE cart_id = {cart_id}"))
-        #get potion quanitity and update
-        inventory = connection.execute(sqlalchemy.text("SELECT num_green_potions, gold FROM global_inventory")).fetchall()
-        #get gold and update 
-        #assumes buying green potion worth 50 gold.
-        connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET num_green_potions = {inventory[0][0] - cart[1]}, gold = {inventory[0][1] + cart[1]*50}"))
-
+        checkout_list = connection.execute(sqlalchemy.text("SELECT red, green, blue, dark, quantity, price FROM cart_items JOIN potion_storage ON cart_items.sku = potion_storage.sku")).fetchall()
+        total_bought = 0
+        total_paid = 0
+        for item in checkout_list:
+            total_bought += item[4]
+            total_paid += item[4]*item[5]
+            connection.execute(sqlalchemy.text(f"UPDATE potion_storage SET stock = stock - {item[4]} WHERE red = {item[0]} AND green = {item[1]} AND blue = {item[2]} AND dark = {item[3]}"))
+        connection.execute(sqlalchemy.text(f"UPDATE shop_info SET gold = gold + {total_paid}"))
     """Response"""
-    return {"total_potions_bought": cart[1], "total_gold_paid": cart[1]*50}
+    return {"total_potions_bought": total_bought, "total_gold_paid": total_paid}
