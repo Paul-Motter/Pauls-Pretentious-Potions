@@ -104,7 +104,7 @@ def create_cart(new_cart: Customer):
         
     """Response"""
     #A unique id for the cart.
-    return {"cart_id": [last_cart_id[0]+1]}
+    return {"cart_id": last_cart_id[0]+1}
 
 
 class CartItem(BaseModel):
