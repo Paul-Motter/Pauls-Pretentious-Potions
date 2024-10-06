@@ -36,7 +36,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
             #update ml_storage with current barrel.
             connection.execute(sqlalchemy.text(f"UPDATE ml_storage SET ml_stored = ml_stored + {barrel.ml_per_barrel*barrel.quantity} WHERE potion_type = {storage_index}"))
              #update gold with current barrel.
-            connection.execute(sqlalchemy.text(f"UPDATE shop_info SET gold = gold + {barrel.price*barrel.quantity}"))
+            connection.execute(sqlalchemy.text(f"UPDATE shop_info SET gold = gold - {barrel.price*barrel.quantity}"))
 
     return "OK"
 
