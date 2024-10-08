@@ -67,7 +67,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     #buying_offset_ml delays buying barrels for a specific type by so many ml. This ensures the shop doesn't only top off mls but buys builk for better price/ml
     if shop_info[1] >= 60000: buying_offset_ml = 10000
     elif shop_info[1] >= 20000: buying_offset_ml = 2500
-    else: buying_offset_ml = 0
+    else: buying_offset_ml = 1 #when max ml per type is 2500 at the start. this prevents the buying of medium barrels to get diverse potion types faster.
     perc_type = 0.25 #each potion type shouldn't take up more than this in sotrage.
 
     #with information make informed decision about what to get.
