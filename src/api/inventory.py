@@ -29,8 +29,8 @@ def get_capacity_plan():
     """
 
     return {
-        "potion_capacity": 0,
-        "ml_capacity": 0
+        "potion_capacity": 4,
+        "ml_capacity": 4
         }
 
 class CapacityPurchase(BaseModel):
@@ -44,7 +44,7 @@ def deliver_capacity_plan(capacity_purchase : CapacityPurchase, order_id: int):
     Start with 1 capacity for 50 potions and 1 capacity for 10000 ml of potion. Each additional 
     capacity unit costs 1000 gold.
     """
-    with db.engine.begin as connection:
+    with db.engine.begin() as connection:
         time_id = connection.execute(sqlalchemy.text("SELECT max(id) FROM times")).scalar_one()
         transaction_id = connection.execute(sqlalchemy.text("INSERT INTO transactions (transaction_type, time_id, order_id) VALUES (:transaction_type, :time_id, :order_id) RETURNING id"), {"transaction_type": "upgrade", "time_id": time_id, "order_id": order_id}).scalar_one()
         connection.execute(sqlalchemy.text("INSERT INTO upgrade_ledger (transaction_id, potion_upgrades, ml_upgrades) VALUES (:transaction_id, :potion_upgrades, :ml_upgrades)"), {"transaction_id": transaction_id, "potion_upgrades": capacity_purchase.potion_capacity, "ml_upgrades": capacity_purchase.ml_capacity})
