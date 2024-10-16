@@ -30,15 +30,30 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     print(f"order_id: {order_id}")
 
     """Checks each delivery to update ml stored and subtract price. Assumes all barrels are green potions."""
+    ml_ledger = []
+    gold_quantity = 0
     with db.engine.begin() as connection:
-        for barrel in barrels_delivered:  
-            storage_index = barrel.potion_type.index(1) #which index in potion type has the value 1.
-            #update ml_storage with current barrel.
-            connection.execute(sqlalchemy.text(f"UPDATE ml_storage SET ml_stored = ml_stored + {barrel.ml_per_barrel*barrel.quantity} WHERE potion_type = {storage_index}"))
-             #update gold with current barrel.
-            connection.execute(sqlalchemy.text(f"UPDATE shop_info SET gold = gold - {barrel.price*barrel.quantity}"))
+        #get time and enter transaction
+        time_id = connection.execute(sqlalchemy.text("SELECT MAX(id) FROM times")).scalar_one()
+        transaction_id = connection.execute(sqlalchemy.text("INSERT INTO transactions (transaction_type, time_id, order_id) VALUES (:transaction_type, :time_id, :order_id) RETURNING id"), {"transaction_type": "barreler", "time_id": time_id, "order_id": order_id}).fetchone()[0]
+        #collect information.
+        for barrel in barrels_delivered:
+            ml_ledger.append(
+                {
+                "transaction_id": transaction_id,
+                "barrel_sku": barrel.sku,
+                "ml_type": barrel.potion_type.index(1),
+                "ml_quantity": barrel.ml_per_barrel*barrel.quantity,
+                "cost": barrel.price*barrel.quantity
+                })
+            gold_quantity -= barrel.price*barrel.quantity
+        #INSERT to ml_ledger
+        connection.execute(sqlalchemy.text("INSERT INTO ml_ledger (transaction_id, barrel_potion_sku, ml_type, ml_quantity, cost) VALUES (:transaction_id, :barrel_sku, :ml_type, :ml_quantity, :cost)"), ml_ledger)
+        #INSERT to gold_ledger.
+        connection.execute(sqlalchemy.text("INSERT INTO gold_ledger (transaction_id, gold_quantity) VALUES (:transaction_id, :gold_quantity)"), {"transaction_id": transaction_id, "gold_quantity": gold_quantity})
 
     return "OK"
+
 
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
@@ -55,9 +70,13 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     #Get information about current shop and inventory status.
     with db.engine.begin() as connection:
-        potion_storage = connection.execute(sqlalchemy.text("SELECT stock FROM potion_storage")).fetchall()
-        ml_storage = connection.execute(sqlalchemy.text("SELECT potion_type, ml_stored FROM ml_storage ORDER BY potion_type ASC")).fetchall()
-        shop_info = connection.execute(sqlalchemy.text("SELECT gold, ml_capacity, potion_capacity FROM shop_info")).fetchone()
+    #    potion_storage = connection.execute(sqlalchemy.text("SELECT stock FROM potion_storage")).fetchall()
+    #    ml_storage = connection.execute(sqlalchemy.text("SELECT potion_type, ml_stored FROM ml_storage ORDER BY potion_type ASC")).fetchall()
+    #    shop_info = connection.execute(sqlalchemy.text("SELECT gold, ml_capacity, potion_capacity FROM shop_info")).fetchone()
+
+        shop_capacity = connection.execute(sqlalchemy.text("SELECT 10000*SUM(ml_upgrades) AS ml_capacity, 50*SUM(potion_upgrades) AS potion_capacity FROM upgrade_ledger;")).fetchone()
+        ml_storage = connection.execute(sqlalchemy.text("SELECT ml_type, SUM(ml_quantity) AS total_ml_quantity FROM ml_ledger GROUP BY ml_type ORDER BY total_ml_quantity")).fetchall()
+        total_gold = connection.execute(sqlalchemy.text("SELECT SUM(gold_quantity) FROM gold_ledger")).fetchone()
 
     #keeping track of multiple barrel purchase stats.
     subtotal_gold = 0
@@ -65,15 +84,15 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     black_list = [False, False, False, False]
     
     #buying_offset_ml delays buying barrels for a specific type by so many ml. This ensures the shop doesn't only top off mls but buys builk for better price/ml
-    if shop_info[1] >= 60000: buying_offset_ml = 10000
-    elif shop_info[1] >= 20000: buying_offset_ml = 2500
+    if shop_capacity[0] >= 60000: buying_offset_ml = 10000
+    elif shop_capacity[0] >= 20000: buying_offset_ml = 2500
     else: buying_offset_ml = 1 #when max ml per type is 2500 at the start. this prevents the buying of medium barrels to get diverse potion types faster.
     perc_type = 0.25 #each potion type shouldn't take up more than this in sotrage.
 
     #with information make informed decision about what to get.
     #if total ml stored or total potions stored is at 90% capacity don't buy anything and save up for shop upgrade. might want to change to compare to a fixed value in the future
-    if functools.reduce(lambda total, current: total + current[1], ml_storage, 0) >= 0.90*shop_info[1] or functools.reduce(lambda total, current: total + current[0], potion_storage, 0) >= 0.90*shop_info[2]:
-        return barrel_plan 
+    #if functools.reduce(lambda total, current: total + current[1], ml_storage, 0) >= 0.90*shop_capacity[0] or functools.reduce(lambda total, current: total + current[0], potion_storage, 0) >= 0.90*shop_capacity[1]:
+    #    return barrel_plan 
 
     #purchase barrels by lowest type currently stocked and highest ml barrel currently affordable. recheck order and gold after every "purchase" 
     #sort catalogue by potion_type and then ml_per_barrel.
@@ -90,8 +109,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         barrel_purchased = False 
         for barrel in wholesale_catalog:
             if(barrel.potion_type[ml_storage[lowest_index][0]] == 1 and #barrel is correct type
-               subtotal_gold + barrel.price <= shop_info[0] and #shop has gold for the purchase
-               ml_storage[lowest_index][1] + purchased_ml[ml_storage[lowest_index][0]] + barrel.ml_per_barrel <=  perc_type*shop_info[1]-buying_offset_ml):  #purchase doesn't overfill the potion types alloted space. 
+               subtotal_gold + barrel.price <= total_gold[0] and #shop has gold for the purchase
+               ml_storage[lowest_index][1] + purchased_ml[ml_storage[lowest_index][0]] + barrel.ml_per_barrel <=  perc_type*float(shop_capacity[0])-buying_offset_ml):  #purchase doesn't overfill the potion types alloted space. 
                 if (functools.reduce(lambda a,b, barrel_sku = barrel.sku: a or b.get("sku") == barrel_sku, barrel_plan, False)):#if barrel is already in the plan.
                     for i in range(len(barrel_plan)): #get the index of barrel.
                         if barrel_plan[i].get("sku") == barrel.sku: plan_index = i

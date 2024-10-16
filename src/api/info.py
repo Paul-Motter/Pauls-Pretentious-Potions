@@ -18,7 +18,7 @@ class Timestamp(BaseModel):
 def post_time(timestamp: Timestamp):
     """Share current time and save in shop_info"""
     with db.engine.begin() as connection:
-        connection.execute(sqlalchemy.text(f"INSERT INTO time (day, time) VALUES ('{timestamp.day}', {timestamp.hour})"))
+        connection.execute(sqlalchemy.text("INSERT INTO times (day, time) VALUES (:day, :hour)"), {"day": timestamp.day, "hour": timestamp.hour})
 
     return "OK"
 

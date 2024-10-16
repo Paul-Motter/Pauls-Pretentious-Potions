@@ -16,27 +16,23 @@ router = APIRouter()
 def get_catalog():
     """Each unique item combination must have only a single price. max of 6 potion SKUs offered at one time."""
     catalogue_entries = []
-
-    potion_type = [0,0,0,0]
     with db.engine.begin() as connection:
-        connection.execute(sqlalchemy.text("DELETE FROM my_catalog"))
-    
-        for i in range(4): #for each basic potion type
-            potion_type[i] = 100
-            potion = connection.execute(sqlalchemy.text(f"SELECT red, green, blue, dark, sku, name, stock FROM potion_storage WHERE red = {potion_type[0]} AND green = {potion_type[1]} AND blue = {potion_type[2]} AND dark = {potion_type[3]} AND stock > 0")).fetchone()
-            if potion is not None:
-                #decided to keep price constant as large barrels can make a potion for 5 gold and there would need to be some sort of variable markup to that compared to small barrel prices.
-                price = 50 #sum([zip(connection.execute(sqlalchemy.text("SELECT total_gold_spend/total_ml_bought as price_per_ml FROM ml_storage")).fetchone(), potion_type)])
-                connection.execute(sqlalchemy.text(f"UPDATE potion_storage SET price = {price} WHERE red = {potion_type[0]} AND green = {potion_type[1]} AND blue = {potion_type[2]} AND dark = {potion_type[3]}"))
+        #returns a list of options in the order of highest total stock to lowest exempting those that are zero stock.
+        potion_list = connection.execute(sqlalchemy.text("SELECT potion_menu.sku, name, SUM(potion_quantity) AS quantity, current_price, red, green, blue, dark "+
+                                                         "FROM potion_menu " +
+                                                         "JOIN potion_ledger ON potion_menu.sku = potion_ledger.sku " +
+                                                         "WHERE potion_quantity != 0 " +
+                                                         "GROUP BY potion_menu.sku, name, current_price, red, green, blue, dark " +
+                                                         "ORDER BY quantity DESC")).fetchall()
+        #gets the first 6 indexes unless there not enough different potion_types.
+        for i in range(6) if len(potion_list)>=6 else range(len(potion_list)):
                 catalogue_entries.append({
-                    "sku": potion[4],
-                    "name": potion[5],
-                    "quantity": potion[6],
-                    "price": price,
-                    "potion_type": [potion[0], potion[1], potion[2], potion[3]]
+                    "sku": potion_list[i][0],
+                    "name": potion_list[i][1],
+                    "quantity": potion_list[i][2],
+                    "price": potion_list[i][3],
+                    "potion_type": [potion_list[i][4], potion_list[i][5], potion_list[i][6], potion_list[i][7]]
                 })
-                connection.execute(sqlalchemy.text(f"INSERT INTO my_catalog (red, green, blue, dark) VALUES ({potion_type[0]},{potion_type[1]},{potion_type[2]},{potion_type[3]})"))
-            potion_type[i] = 0
     
     """Reponse"""
     print(f"My Catalogue: {catalogue_entries}")

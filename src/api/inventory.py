@@ -14,9 +14,9 @@ router = APIRouter(
 @router.get("/audit")
 def get_inventory():
     with db.engine.begin() as connection:
-        number_of_potions = connection.execute(sqlalchemy.text("SELECT sum(stock) FROM potion_storage")).fetchone()[0]
-        ml_in_barrels = connection.execute(sqlalchemy.text("SELECT sum(ml_stored) FROM ml_storage")).fetchone()[0]
-        gold = connection.execute(sqlalchemy.text("SELECT gold FROM shop_info")).fetchone()[0]
+        number_of_potions = connection.execute(sqlalchemy.text("SELECT  COALESCE(sum(potion_quantity), 0) FROM potion_ledger")).scalar_one()
+        ml_in_barrels = connection.execute(sqlalchemy.text("SELECT sum(ml_quantity) FROM ml_ledger")).scalar_one()
+        gold = connection.execute(sqlalchemy.text("SELECT sum(gold_quantity) FROM gold_ledger")).scalar_one()
 
     return {"number_of_potions": number_of_potions, "ml_in_barrels": ml_in_barrels, "gold": gold}
 
@@ -44,5 +44,11 @@ def deliver_capacity_plan(capacity_purchase : CapacityPurchase, order_id: int):
     Start with 1 capacity for 50 potions and 1 capacity for 10000 ml of potion. Each additional 
     capacity unit costs 1000 gold.
     """
+    with db.engine.begin as connection:
+        time_id = connection.execute(sqlalchemy.text("SELECT max(id) FROM times")).scalar_one()
+        transaction_id = connection.execute(sqlalchemy.text("INSERT INTO transactions (transaction_type, time_id, order_id) VALUES (:transaction_type, :time_id, :order_id) RETURNING id"), {"transaction_type": "upgrade", "time_id": time_id, "order_id": order_id}).scalar_one()
+        connection.execute(sqlalchemy.text("INSERT INTO upgrade_ledger (transaction_id, potion_upgrades, ml_upgrades) VALUES (:transaction_id, :potion_upgrades, :ml_upgrades)"), {"transaction_id": transaction_id, "potion_upgrades": capacity_purchase.potion_capacity, "ml_upgrades": capacity_purchase.ml_capacity})
+        
+
 
     return "OK"
