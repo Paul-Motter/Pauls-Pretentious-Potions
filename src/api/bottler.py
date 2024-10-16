@@ -26,7 +26,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
     with db.engine.begin() as connection:
         time_id = connection.execute(sqlalchemy.text("SELECT max(id) FROM times")).scalar_one()
         transaction_id = connection.execute(sqlalchemy.text("INSERT INTO transactions (transaction_type, time_id, order_id) VALUES (:transaction_type, :time_id, :order_id) RETURNING id"), {"transaction_type": "bottler", "time_id": time_id, "order_id": order_id}).scalar_one()
-        price_per_ml = map(lambda a: a[0], connection.execute(sqlalchemy.text("SELECT sum(cost)/COALESCE(NULLIF(SUM(ml_quantity), 0), 1) AS cost_per_ml FROM ml_ledger WHERE ml_quantity >= 0 GROUP BY ml_type ORDER BY ml_type ASC")).fetchall())
+        price_per_ml = map(lambda a: a[0], connection.execute(sqlalchemy.text("SELECT round(sum(cost)/COALESCE(NULLIF(SUM(ml_quantity), 0), 1), 2) AS cost_per_ml FROM ml_ledger WHERE ml_quantity >= 0 GROUP BY ml_type ORDER BY ml_type ASC")).fetchall())
         potion_ledger = []
         ml_ledger = []
         for potion in potions_delivered:
@@ -34,7 +34,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                 "transaction_id": transaction_id,
                 "sku": f"{potion.potion_type[0]}R_{potion.potion_type[1]}G_{potion.potion_type[2]}B_{potion.potion_type[3]}D",
                 "potion_quantity": potion.quantity,
-                "sales_price": 2*reduce(lambda a,b: a + b[0]*b[1], zip(price_per_ml, potion.potion_type), 0)
+                "sales_price": int(2*reduce(lambda a,b: a + b[0]*b[1], zip(price_per_ml, potion.potion_type), 0))
             })
             for ml_type in range(len(potion.potion_type)):
                 if potion.potion_type[ml_type] != 0:
@@ -67,7 +67,7 @@ def get_bottle_plan():
             if potion < max_potion_quantity and ml_storage[i][0] >= 100:
                 potion_plan.append({
                                     "potion_type": potion_type.copy(),
-                                    "quantity": ml_storage[i][0]//100 if potion+(ml_storage[i][0]//100) <= max_potion_quantity else max_potion_quantity-potion 
+                                    "quantity": int(ml_storage[i][0]//100 if potion+(ml_storage[i][0]//100) <= max_potion_quantity else max_potion_quantity-potion)
                 })
             potion_type[i] = 0
 

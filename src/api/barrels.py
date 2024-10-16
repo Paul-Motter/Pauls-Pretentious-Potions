@@ -83,12 +83,28 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     purchased_ml = [0, 0, 0, 0]
     black_list = [False, False, False, False]
     
+    perc_type = 0.25
     #buying_offset_ml delays buying barrels for a specific type by so many ml. This ensures the shop doesn't only top off mls but buys builk for better price/ml
-    if shop_capacity[0] >= 60000: buying_offset_ml = 10000
-    elif shop_capacity[0] >= 20000: buying_offset_ml = 2500
-    else: buying_offset_ml = 1 #when max ml per type is 2500 at the start. this prevents the buying of medium barrels to get diverse potion types faster.
-    perc_type = 0.25 #each potion type shouldn't take up more than this in sotrage.
+    if shop_capacity[0] >= 60000: #Waits to buy large barrels. buys dark barrels so capcpacity accounts for 4 types.
+        buying_offset_ml = 10000
+        #perc_type is default 25%
+    elif shop_capacity[0] >= 40000: #Waits to buy medium barrels. buys dark barrels so capacity accounts for 4 types.
+        buying_offset_ml = 2500
+        #perc_type is default 25%
+    elif shop_capacity[0] >= 20000: #Wait to buy medium barrels. no dark barrels so capacity accounts for 3 types.
+        buying_offset_ml = 2500
+        black_list[3] = True
+        perc_type = 0.30
+    else: 
+        if functools.reduce(lambda a, b: a + b[1], ml_storage, 0) < 1000:
+            buying_offset_ml = 501 #allows for more diverse buying by restricting buying medium barrels at the start
+        else:
+            buying_offset_ml = 0 #allows for medium barrel buying.
+        black_list[3] = True 
+        #when max ml per type is 2500 at the start. this prevents the buying of medium barrels to get diverse potion types faster.
+        perc_type = 0.30
 
+    #each potion type shouldn't take up more than this in sotrage.
     #with information make informed decision about what to get.
     #if total ml stored or total potions stored is at 90% capacity don't buy anything and save up for shop upgrade. might want to change to compare to a fixed value in the future
     #if functools.reduce(lambda total, current: total + current[1], ml_storage, 0) >= 0.90*shop_capacity[0] or functools.reduce(lambda total, current: total + current[0], potion_storage, 0) >= 0.90*shop_capacity[1]:

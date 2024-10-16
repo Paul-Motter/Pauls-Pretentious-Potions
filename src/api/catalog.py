@@ -18,12 +18,11 @@ def get_catalog():
     catalogue_entries = []
     with db.engine.begin() as connection:
         #returns a list of options in the order of highest total stock to lowest exempting those that are zero stock.
-        potion_list = connection.execute(sqlalchemy.text("SELECT potion_menu.sku, name, SUM(potion_quantity) AS quantity, current_price, red, green, blue, dark "+
-                                                         "FROM potion_menu " +
-                                                         "JOIN potion_ledger ON potion_menu.sku = potion_ledger.sku " +
-                                                         "WHERE potion_quantity != 0 " +
-                                                         "GROUP BY potion_menu.sku, name, current_price, red, green, blue, dark " +
-                                                         "ORDER BY quantity DESC")).fetchall()
+        potion_list = connection.execute(sqlalchemy.text("""SELECT potion_menu.sku, name, SUM(potion_quantity) AS quantity, current_price, red, green, blue, dark 
+                                                         FROM potion_menu JOIN potion_ledger ON potion_menu.sku = potion_ledger.sku 
+                                                         GROUP BY potion_menu.sku, name, current_price, red, green, blue, dark 
+                                                         HAVING sum(potion_quantity) != 0 
+                                                         ORDER BY quantity DESC""")).fetchall()
         #gets the first 6 indexes unless there not enough different potion_types.
         for i in range(6) if len(potion_list)>=6 else range(len(potion_list)):
                 catalogue_entries.append({
