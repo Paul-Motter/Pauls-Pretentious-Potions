@@ -29,7 +29,7 @@ def get_catalog():
                 catalogue_entries.append({
                     "sku": potion_list[i][0],
                     "name": potion_list[i][1],
-                    "quantity": potion_list[i][2],
+                    "quantity": int(potion_list[i][2]),
                     "price": potion_list[i][3],
                     "potion_type": [potion_list[i][4], potion_list[i][5], potion_list[i][6], potion_list[i][7]]
                 })
