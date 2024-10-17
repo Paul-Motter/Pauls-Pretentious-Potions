@@ -26,7 +26,7 @@ def reset():
         #connection.execute(sqlalchemy.text("DELETE FROM cart_items"))
         #connection.execute(sqlalchemy.text("DELETE FROM carts"))
         #connection.execute(sqlalchemy.text("DELETE FROM customer_visit"))
-        connection.execute(sqlalchemy.text("DELETE FROM potion_menu"))
+        #connection.execute(sqlalchemy.text("DELETE FROM potion_menu"))
         connection.execute(sqlalchemy.text("DELETE FROM transactions"))
         #connection.execute(sqlalchemy.text("DELETE FROM times"))
         
@@ -57,7 +57,7 @@ def reset():
                                 "dark": d*50,
                                 "current_price": 0
                             })
-        connection.execute(sqlalchemy.text("INSERT INTO potion_menu (sku, name, red, green, blue, dark, current_price) VALUES (:sku, :name, :red, :green, :blue, :dark, :current_price)"), potion_menu)    
+    #    connection.execute(sqlalchemy.text("INSERT INTO potion_menu (sku, name, red, green, blue, dark, current_price) VALUES (:sku, :name, :red, :green, :blue, :dark, :current_price)"), potion_menu)    
     #     connection.execute(sqlalchemy.text("INSERT INTO potion_ledger (transaction_id, sku, potion_quantity, sales_price) VALUES (:transaction_id, :sku, :potion_quantity, :sales_price)"),
     #                        [
     #                             {"transaction_id": transaction_id, "sku": "0R_0G_0B_100D", "potion_quantity": 0, "sales_price": 0},
