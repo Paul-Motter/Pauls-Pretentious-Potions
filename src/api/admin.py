@@ -42,21 +42,21 @@ def reset():
                                 {"transaction_id": transaction_id, "barrel_potion_sku": "setup3", "ml_type": 3, "ml_quantity": 0, "cost": 0}
                             ])
         connection.execute(sqlalchemy.text("INSERT INTO gold_ledger (transaction_id, gold_quantity) VALUES (:transaction_id, :gold_quantity)"), {"transaction_id": transaction_id, "gold_quantity": 100})
-        potion_menu = []
-        for r in range(3):
-            for g in range(3):
-                for b in range(3):
-                    for d in range(3):
-                        if r+g+b+d == 2:
-                            potion_menu.append({
-                                "sku": f"{r*50}R_{g*50}G_{b*50}B_{d*50}D",
-                                "name": "Mystery potion",
-                                "red": r*50,
-                                "green": g*50,
-                                "blue": b*50,
-                                "dark": d*50,
-                                "current_price": 0
-                            })
+        #potion_menu = []
+        # for r in range(3):
+        #     for g in range(3):
+        #         for b in range(3):
+        #             for d in range(3):
+        #                 if r+g+b+d == 2:
+        #                     potion_menu.append({
+        #                         "sku": f"{r*50}R_{g*50}G_{b*50}B_{d*50}D",
+        #                         "name": "Mystery potion",
+        #                         "red": r*50,
+        #                         "green": g*50,
+        #                         "blue": b*50,
+        #                         "dark": d*50,
+        #                         "current_price": 0
+        #                     })
     #    connection.execute(sqlalchemy.text("INSERT INTO potion_menu (sku, name, red, green, blue, dark, current_price) VALUES (:sku, :name, :red, :green, :blue, :dark, :current_price)"), potion_menu)    
     #     connection.execute(sqlalchemy.text("INSERT INTO potion_ledger (transaction_id, sku, potion_quantity, sales_price) VALUES (:transaction_id, :sku, :potion_quantity, :sales_price)"),
     #                        [

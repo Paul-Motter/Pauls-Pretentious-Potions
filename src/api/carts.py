@@ -146,6 +146,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         checkout_list = connection.execute(sqlalchemy.text("SELECT sku, quantity, sales_price FROM cart_items WHERE cart_id = :cart_id"), {"cart_id": cart_id}).fetchall()
         potion_ledger = []
         gold_ledger = []
+        catalog_log = []
         total_gold = 0
         total_bought = 0
         for item in checkout_list:
@@ -157,12 +158,18 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             })
             total_bought += item[1]
             total_gold += item[1]*item[2]
+            catalog_log.append({
+                "time_id": time_id,
+                "sku": item[0],
+                "bought": item[1]
+            })
         gold_ledger.append({
             "transaction_id": transaction_id,
             "gold_quantity": total_gold
         })
         connection.execute(sqlalchemy.text("INSERT INTO potion_ledger (transaction_id, sku, potion_quantity, sales_price) VALUES (:transaction_id, :sku, :potion_quantity, :sales_price)"), potion_ledger)
         connection.execute(sqlalchemy.text("INSERT INTO gold_ledger (transaction_id, gold_quantity) VALUES (:transaction_id, :gold_quantity)"), gold_ledger)
+        connection.execute(sqlalchemy.text("UPDATE catalog_log SET bought = bought+:bought WHERE time_id = :time_id AND sku = :sku"), catalog_log)
         connection.execute(sqlalchemy.text("UPDATE carts SET payment = :payment WHERE id = :cart_id"), {"payment": cart_checkout.payment, "cart_id": cart_id})
 
     """Response"""
