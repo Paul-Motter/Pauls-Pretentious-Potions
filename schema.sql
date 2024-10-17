@@ -1,3 +1,5 @@
+--Run All to setup schema to an intial state.
+
 --Times
 create table
   public.times (
@@ -108,3 +110,24 @@ create table
     constraint upgrade_ledger_transaction_id_key unique (transaction_id),
     constraint upgrade_ledger_transaction_id_fkey foreign key (transaction_id) references transactions (id)
   ) tablespace pg_default;
+
+--Setup Ledgers and intial TIme
+INSERT INTO times (day, time) VALUES ( 'SETUP_DAY', 0);
+INSERT INTO transactions (transaction_type, time_id, order_id) SELECT 'SETUP', max(times.id), 0 FROM times;
+INSERT INTO upgrade_ledger (transaction_id, potion_upgrades, ml_upgrades) SELECT max(transactions.id), 1, 1 FROM transactions;
+INSERT INTO ml_ledger (transaction_id, barrel_potion_sku, ml_type, ml_quantity, cost) SELECT max(transactions.id), 'SETUP_RED', 0, 0, 0 FROM transactions;
+INSERT INTO ml_ledger (transaction_id, barrel_potion_sku, ml_type, ml_quantity, cost) SELECT max(transactions.id), 'SETUP_GREEN', 1, 0, 0 FROM transactions;
+INSERT INTO ml_ledger (transaction_id, barrel_potion_sku, ml_type, ml_quantity, cost) SELECT max(transactions.id), 'SETUP_BLUE', 2, 0, 0 FROM transactions;
+INSERT INTO ml_ledger (transaction_id, barrel_potion_sku, ml_type, ml_quantity, cost) SELECT max(transactions.id), 'SETUP_DARK', 3, 0, 0 FROM transactions;
+INSERT INTO gold_ledger (transaction_id, gold_quantity) SELECT max(transactions.id), 100 FROM transactions;
+INSERT INTO potion_menu (sku, name, red, green, blue, dark, current_price) VALUES 
+    ('0R_0G_0B_100D', 'Mystery potion', 0, 0, 0, 100, 0), 
+    ('0R_0G_50B_50D', 'Mystery potion', 0, 0, 50, 50, 0), 
+    ('0R_0G_100B_0D', 'Mystery potion', 0, 0, 100, 0, 0), 
+    ('0R_50G_0B_50D', 'Mystery potion', 0, 50, 0, 50, 0), 
+    ('0R_50G_50B_0D', 'Mystery potion', 0, 50, 50, 0, 0), 
+    ('0R_100G_0B_0D', 'Mystery potion', 0, 100, 0, 0, 0), 
+    ('50R_0G_0B_50D', 'Mystery potion', 50, 0, 0, 50, 0), 
+    ('50R_0G_50B_0D', 'Mystery potion', 50, 0, 50, 0, 0), 
+    ('50R_50G_0B_0D', 'Mystery potion', 50, 50, 0, 0, 0), 
+    ('100R_0G_0B_0D', 'Mystery potion', 100, 0, 0, 0, 0);

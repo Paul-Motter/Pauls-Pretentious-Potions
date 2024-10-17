@@ -14,9 +14,28 @@ router = APIRouter(
 @router.get("/audit")
 def get_inventory():
     with db.engine.begin() as connection:
-        number_of_potions = connection.execute(sqlalchemy.text("SELECT  COALESCE(sum(potion_quantity), 0) FROM potion_ledger")).scalar_one()
+        number_of_potions = connection.execute(sqlalchemy.text("SELECT COALESCE(sum(potion_quantity), 0) FROM potion_ledger")).scalar_one()
         ml_in_barrels = connection.execute(sqlalchemy.text("SELECT sum(ml_quantity) FROM ml_ledger")).scalar_one()
         gold = connection.execute(sqlalchemy.text("SELECT sum(gold_quantity) FROM gold_ledger")).scalar_one()
+
+        #uncomment and use to update potion_menu wihtout resetting everything.
+        # potion_menu = []
+        # #all possible permutations of [0-2,0-2,0-2,0-2] where the sum of all indexes <=2
+        # for r in range(3):
+        #     for g in range(3):
+        #         for b in range(3):
+        #             for d in range(3):
+        #                 if r+g+b+d == 2:
+        #                     potion_menu.append({
+        #                         "sku": f"{r*50}R_{g*50}G_{b*50}B_{d*50}D",
+        #                         "name": "Mystery potion",
+        #                         "red": r*50,
+        #                         "green": g*50,
+        #                         "blue": b*50,
+        #                         "dark": d*50,
+        #                         "current_price": 0
+        #                     })
+        # connection.execute(sqlalchemy.text("INSERT INTO potion_menu (sku, name, red, green, blue, dark, current_price) VALUES (:sku, :name, :red, :green, :blue, :dark, :current_price) ON CONFLICT (sku) DO NOTHING"), potion_menu)    
 
     return {"number_of_potions": number_of_potions, "ml_in_barrels": ml_in_barrels, "gold": gold}
 
