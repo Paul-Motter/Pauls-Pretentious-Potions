@@ -22,12 +22,12 @@ def reset():
         connection.execute(sqlalchemy.text("DELETE FROM ml_ledger"))
         connection.execute(sqlalchemy.text("DELETE FROM gold_ledger"))
         connection.execute(sqlalchemy.text("DELETE FROM potion_ledger"))
-        connection.execute(sqlalchemy.text("DELETE FROM cart_items"))
-        connection.execute(sqlalchemy.text("DELETE FROM carts"))
-        connection.execute(sqlalchemy.text("DELETE FROM customer_visit"))
-        connection.execute(sqlalchemy.text("DELETE FROM potion_menu"))
+        #connection.execute(sqlalchemy.text("DELETE FROM cart_items"))
+        #connection.execute(sqlalchemy.text("DELETE FROM carts"))
+        #connection.execute(sqlalchemy.text("DELETE FROM customer_visit"))
+        #connection.execute(sqlalchemy.text("DELETE FROM potion_menu"))
         connection.execute(sqlalchemy.text("DELETE FROM transactions"))
-        connection.execute(sqlalchemy.text("DELETE FROM times"))
+        #connection.execute(sqlalchemy.text("DELETE FROM times"))
         
         #setup each table.
         time_id = connection.execute(sqlalchemy.text("INSERT INTO times (day, time) VALUES (\'Setup\', 0) RETURNING id")).scalar_one()
@@ -41,7 +41,7 @@ def reset():
                                 {"transaction_id": transaction_id, "barrel_potion_sku": "setup3", "ml_type": 3, "ml_quantity": 0, "cost": 0}
                             ])
         connection.execute(sqlalchemy.text("INSERT INTO gold_ledger (transaction_id, gold_quantity) VALUES (:transaction_id, :gold_quantity)"), {"transaction_id": transaction_id, "gold_quantity": 100})
-        connection.execute(sqlalchemy.text("INSERT INTO potion_menu (red, green, blue, dark, sku, name, current_price) VALUES (0, 0, 0, 100, '0R_0G_0B_100D', 'Dark_100', 0), (0, 0, 100, 0, '0R_0G_100B_0D', 'Blue_100', 0), (0, 100, 0, 0, '0R_100G_0B_0D', 'Green_100', 0), (100, 0, 0, 0, '100R_0G_0B_0D', 'Red_100', 0);"))
+        #connection.execute(sqlalchemy.text("INSERT INTO potion_menu (red, green, blue, dark, sku, name, current_price) VALUES (0, 0, 0, 100, '0R_0G_0B_100D', 'Dark_100', 0), (0, 0, 100, 0, '0R_0G_100B_0D', 'Blue_100', 0), (0, 100, 0, 0, '0R_100G_0B_0D', 'Green_100', 0), (100, 0, 0, 0, '100R_0G_0B_0D', 'Red_100', 0);"))
         connection.execute(sqlalchemy.text("INSERT INTO potion_ledger (transaction_id, sku, potion_quantity, sales_price) VALUES (:transaction_id, :sku, :potion_quantity, :sales_price)"),
                            [
                                 {"transaction_id": transaction_id, "sku": "0R_0G_0B_100D", "potion_quantity": 0, "sales_price": 0},
