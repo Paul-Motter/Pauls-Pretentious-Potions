@@ -77,7 +77,7 @@ def get_bottle_plan():
                 quantity = []
                 for i in range(4):
                     if potion[i] != 0:
-                        quantity.append(ml_storage[i]-ml_spent[i]//potion[i])
+                        quantity.append((ml_storage[i][0]-ml_spent[i])//potion[i])
                 quantity = int(min(quantity) if potion[4]+min(quantity) <= max_capacity[0]//possible_types else (max_capacity[0]//possible_types)-potion[4])
                 #append the quantity we can actually make and store onto potion_plan.
                 potion_plan.append({
