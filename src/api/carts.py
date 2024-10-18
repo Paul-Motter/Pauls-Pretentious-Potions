@@ -92,7 +92,8 @@ def post_visits(visit_id: int, customers: list[Customer]):
                 "character_level": customer.level,
                 "date_id": time_id
             })
-        connection.execute(sqlalchemy.text("INSERT INTO customer_visit (visit_id, customer_name, character_class, character_level, date_id) VALUES (:visit_id, :customer_name, :character_class, :character_level, :date_id)"), customer_list)
+        if len(customer_list) > 0:
+            connection.execute(sqlalchemy.text("INSERT INTO customer_visit (visit_id, customer_name, character_class, character_level, date_id) VALUES (:visit_id, :customer_name, :character_class, :character_level, :date_id)"), customer_list)
     
     return "OK"
 
