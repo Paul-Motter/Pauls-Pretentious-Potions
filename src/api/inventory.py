@@ -68,6 +68,4 @@ def deliver_capacity_plan(capacity_purchase : CapacityPurchase, order_id: int):
         transaction_id = connection.execute(sqlalchemy.text("INSERT INTO transactions (transaction_type, time_id, order_id) VALUES (:transaction_type, :time_id, :order_id) RETURNING id"), {"transaction_type": "upgrade", "time_id": time_id, "order_id": order_id}).scalar_one()
         connection.execute(sqlalchemy.text("INSERT INTO upgrade_ledger (transaction_id, potion_upgrades, ml_upgrades) VALUES (:transaction_id, :potion_upgrades, :ml_upgrades)"), {"transaction_id": transaction_id, "potion_upgrades": capacity_purchase.potion_capacity, "ml_upgrades": capacity_purchase.ml_capacity})
         
-
-
     return "OK"

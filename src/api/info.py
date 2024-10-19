@@ -17,8 +17,10 @@ class Timestamp(BaseModel):
 @router.post("/current_time")
 def post_time(timestamp: Timestamp):
     """Share current time and save in shop_info"""
+    
     with db.engine.begin() as connection:
-        connection.execute(sqlalchemy.text("INSERT INTO times (day, time) VALUES (:day, :hour)"), {"day": timestamp.day, "hour": timestamp.hour})
+        time_id = connection.execute(sqlalchemy.text("INSERT INTO times (day, time) VALUES (:day, :hour) RETURNING id"), {"day": timestamp.day, "hour": timestamp.hour}).scalar_one()
+    print(f"time_id:{time_id}, day:{timestamp.day}, hour:{timestamp.hour}")
 
     return "OK"
 

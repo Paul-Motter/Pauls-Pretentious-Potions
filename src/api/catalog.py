@@ -39,7 +39,8 @@ def get_catalog():
                      "sku": potion_list[i][0],
                      "bought": 0,
                 })
-        connection.execute(sqlalchemy.text("INSERT INTO catalog_log (time_id, sku, bought) VALUES (:time_id, :sku, :bought)"), catalog_log)    
+        if len(catalog_log) > 0:
+            connection.execute(sqlalchemy.text("INSERT INTO catalog_log (time_id, sku, bought) VALUES (:time_id, :sku, :bought)"), catalog_log)    
     """Reponse"""
     print(f"My Catalogue: {catalog_entries}")
     return catalog_entries
