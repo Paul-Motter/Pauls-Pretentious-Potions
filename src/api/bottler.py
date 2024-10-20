@@ -31,7 +31,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
         ml_ledger = []
         
         for potion in potions_delivered:
-            #int(2*reduce(lambda a,b: a + b[0]*b[1], zip(price_per_ml, potion.potion_type), 0))
+            #nt(2*reduce(lambda a,b: a + b[0]*b[1], zip(price_per_ml, potion.potion_type), 0))
             potion_ledger.append({
                 "transaction_id": transaction_id,
                 "sku": f"{potion.potion_type[0]}R_{potion.potion_type[1]}G_{potion.potion_type[2]}B_{potion.potion_type[3]}D",
