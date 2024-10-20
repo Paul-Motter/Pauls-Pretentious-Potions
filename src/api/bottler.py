@@ -26,7 +26,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
     with db.engine.begin() as connection:
         time_id = connection.execute(sqlalchemy.text("SELECT max(id) FROM times")).scalar_one()
         transaction_id = connection.execute(sqlalchemy.text("INSERT INTO transactions (transaction_type, time_id, order_id) VALUES (:transaction_type, :time_id, :order_id) RETURNING id"), {"transaction_type": "bottler", "time_id": time_id, "order_id": order_id}).scalar_one()
-        price_per_ml = map(lambda a: a[0], connection.execute(sqlalchemy.text("SELECT round(sum(cost)/COALESCE(NULLIF(SUM(ml_quantity), 0), 1), 2) AS cost_per_ml FROM ml_ledger WHERE ml_quantity >= 0 GROUP BY ml_type ORDER BY ml_type ASC")).fetchall())
+        price_per_ml = list(map(lambda a: a[0], connection.execute(sqlalchemy.text("SELECT round(sum(cost)/COALESCE(NULLIF(SUM(ml_quantity), 0), 1), 2) AS cost_per_ml FROM ml_ledger WHERE ml_quantity >= 0 GROUP BY ml_type ORDER BY ml_type ASC")).fetchall()))
         potion_ledger = []
         ml_ledger = []
         
@@ -68,10 +68,12 @@ def get_bottle_plan():
         max_capacity = connection.execute(sqlalchemy.text("SELECT 50*sum(potion_upgrades), 10000*sum(ml_upgrades) FROM upgrade_ledger")).fetchone()
         #returns a list of potions and their stock in my inventory.
         potions = connection.execute(sqlalchemy.text("SELECT red, green, blue, dark, COALESCE(sum(potion_quantity), 0) AS quantity FROM potion_menu LEFT JOIN potion_ledger ON potion_menu.sku = potion_ledger.sku GROUP BY red, green, blue, dark ORDER BY quantity ASC")).fetchall()
+        
         if max_capacity[1] >= 40000: #dark barrels will be purchased and dark potions can be made/sold.
             possible_types = 10
         else: #no dark barrels eliminates possibilities.
             possible_types = 6 
+        
         for potion in potions: #for each basic potion type
             #check that the ml required to make at least one potion is in stock and we need more of this potion.
             if potion[4] < max_capacity[0]//possible_types and ml_storage[0][0]-ml_spent[0] >= potion[0] and ml_storage[1][0]-ml_spent[1] >= potion[1] and ml_storage[2][0]-ml_spent[2] >= potion[2] and ml_storage[3][0]-ml_spent[3] >= potion[3]:
