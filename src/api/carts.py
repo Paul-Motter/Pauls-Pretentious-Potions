@@ -125,7 +125,8 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
 
     """Finds the cart_id and updates with the selected purchase of the customer"""
     with db.engine.begin() as connection:
-        connection.execute(sqlalchemy.text("INSERT INTO cart_items (cart_id, sku, quantity, sales_price) SELECT :cart_id, :sku, :quantity, current_price FROM potion_menu WHERE :sku = potion_menu.sku"), {"cart_id": cart_id, "sku": item_sku, "quantity":cart_item.quantity})
+        time_id = connection.execute(sqlalchemy.text("SELECT max(id) FROM times")).scalar_one()
+        connection.execute(sqlalchemy.text("INSERT INTO cart_items (cart_id, sku, quantity, sales_price) SELECT :cart_id, :sku, :quantity, sales_price FROM catalog_log WHERE :sku = catalog_log.sku AND :time_id = catalog_log.time_id"), {"cart_id": cart_id, "sku": item_sku, "quantity":cart_item.quantity, "time_id": time_id})
     
     return "OK"
 
@@ -143,7 +144,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     with db.engine.begin() as connection:
 
         time_id = connection.execute(sqlalchemy.text("SELECT max(id) FROM times")).scalar_one()
-        transaction_id = connection.execute(sqlalchemy.text("INSERT INTO transactions (transaction_type, time_id, order_id) VALUES (:transaction_type, :time_id, :order_id) RETURNING id"), {"transaction_type": "cart_checkout", "time_id": time_id, "order_id": cart_id}).scalar_one()
+        transaction_id = connection.execute(sqlalchemy.text("INSERT INTO transactions (transaction_type, time_id, order_id) VALUES (:transaction_type, :time_id, :order_id) RETURNING id"), {"transaction_type":"cart_checkout", "time_id":time_id, "order_id":cart_id}).scalar_one()
         checkout_list = connection.execute(sqlalchemy.text("SELECT sku, quantity, sales_price FROM cart_items WHERE cart_id = :cart_id"), {"cart_id": cart_id}).fetchall()
         potion_ledger = []
         gold_ledger = []
@@ -154,8 +155,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             potion_ledger.append({
                 "transaction_id": transaction_id,
                 "sku": item[0],
-                "potion_quantity": -item[1],
-                "sales_price": item[2]
+                "potion_quantity": -item[1]
             })
             total_bought += item[1]
             total_gold += item[1]*item[2]
@@ -168,7 +168,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             "transaction_id": transaction_id,
             "gold_quantity": total_gold
         })
-        connection.execute(sqlalchemy.text("INSERT INTO potion_ledger (transaction_id, sku, potion_quantity, sales_price) VALUES (:transaction_id, :sku, :potion_quantity, :sales_price)"), potion_ledger)
+        connection.execute(sqlalchemy.text("INSERT INTO potion_ledger (transaction_id, sku, potion_quantity) VALUES (:transaction_id, :sku, :potion_quantity)"), potion_ledger)
         connection.execute(sqlalchemy.text("INSERT INTO gold_ledger (transaction_id, gold_quantity) VALUES (:transaction_id, :gold_quantity)"), gold_ledger)
         connection.execute(sqlalchemy.text("UPDATE catalog_log SET bought = bought+:bought WHERE time_id = :time_id AND sku = :sku"), catalog_log)
         connection.execute(sqlalchemy.text("UPDATE carts SET payment = :payment WHERE id = :cart_id"), {"payment": cart_checkout.payment, "cart_id": cart_id})

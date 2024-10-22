@@ -26,17 +26,14 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
     with db.engine.begin() as connection:
         time_id = connection.execute(sqlalchemy.text("SELECT max(id) FROM times")).scalar_one()
         transaction_id = connection.execute(sqlalchemy.text("INSERT INTO transactions (transaction_type, time_id, order_id) VALUES (:transaction_type, :time_id, :order_id) RETURNING id"), {"transaction_type": "bottler", "time_id": time_id, "order_id": order_id}).scalar_one()
-        price_per_ml = list(map(lambda a: a[0], connection.execute(sqlalchemy.text("SELECT round(sum(cost)/COALESCE(NULLIF(SUM(ml_quantity), 0), 1), 2) AS cost_per_ml FROM ml_ledger WHERE ml_quantity >= 0 GROUP BY ml_type ORDER BY ml_type ASC")).fetchall()))
         potion_ledger = []
         ml_ledger = []
         
         for potion in potions_delivered:
-            #nt(2*reduce(lambda a,b: a + b[0]*b[1], zip(price_per_ml, potion.potion_type), 0))
             potion_ledger.append({
                 "transaction_id": transaction_id,
                 "sku": f"{potion.potion_type[0]}R_{potion.potion_type[1]}G_{potion.potion_type[2]}B_{potion.potion_type[3]}D",
                 "potion_quantity": potion.quantity,
-                "sales_price": int(2*reduce(lambda a,b: a + b[0]*b[1], zip(price_per_ml, potion.potion_type), 0))
             })
             for ml_type in range(len(potion.potion_type)):
                 if potion.potion_type[ml_type] != 0:
@@ -47,8 +44,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                         "potion_sku": f"{potion.potion_type[0]}R_{potion.potion_type[1]}G_{potion.potion_type[2]}B_{potion.potion_type[3]}D",
                         "cost": 0
                     })
-        connection.execute(sqlalchemy.text("INSERT INTO potion_ledger (transaction_id, sku, potion_quantity, sales_price) VALUES (:transaction_id, :sku, :potion_quantity, :sales_price)"), potion_ledger)
-        connection.execute(sqlalchemy.text("UPDATE potion_menu SET current_price = :sales_price WHERE sku = :sku"), potion_ledger)
+        connection.execute(sqlalchemy.text("INSERT INTO potion_ledger (transaction_id, sku, potion_quantity) VALUES (:transaction_id, :sku, :potion_quantity)"), potion_ledger)
         connection.execute(sqlalchemy.text("INSERT INTO ml_ledger (transaction_id, ml_type, ml_quantity, barrel_potion_sku, cost) VALUES (:transaction_id, :ml_type, :ml_quantity, :potion_sku, :cost)"), ml_ledger)
         
     return "Done"
