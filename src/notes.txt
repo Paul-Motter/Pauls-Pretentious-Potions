@@ -54,3 +54,11 @@ POST /carts/1/checkout
   POST /barrels/plan
   POST /barrels/deliver
   -bottler, Sanity, barrels,
+
+
+('0R_50G_50B_0D', 'Mystery potion', Decimal('8'), 0, 50, 50, 0),
+('50R_0G_50B_0D', 'Mystery potion', Decimal('8'), 50, 0, 50, 0),
+('50R_50G_0B_0D', 'Mystery potion', Decimal('8'), 50, 50, 0, 0),
+('100R_0G_0B_0D', 'Mystery potion', Decimal('8'), 100, 0, 0, 0),
+('0R_0G_100B_0D', 'Mystery potion', Decimal('5'), 0, 0, 100, 0),
+('0R_100G_0B_0D', 'Mystery potion', Decimal('1'), 0, 100, 0, 0)

@@ -29,7 +29,7 @@ def get_catalog():
         price_per_ml = list(map(lambda a: a[0], connection.execute(sqlalchemy.text("SELECT round(sum(cost)/COALESCE(NULLIF(SUM(ml_quantity), 0), 1), 2) AS cost_per_ml FROM ml_ledger WHERE ml_quantity >= 0 GROUP BY ml_type ORDER BY ml_type ASC")).fetchall()))
         #gets the first 6 indexes unless there not enough different potion_types.
         for i in range(6) if len(potion_list)>=6 else range(len(potion_list)):
-                current_price = int(2*(price_per_ml[0]*potion_list[i][3]+price_per_ml[1]*potion_list[i][4]+price_per_ml[2]*potion_list[i][5]*price_per_ml[3]*potion_list[i][4]))
+                current_price = int(2*(price_per_ml[0]*potion_list[i][3] + price_per_ml[1]*potion_list[i][4] + price_per_ml[2]*potion_list[i][5] + price_per_ml[3]*potion_list[i][6]))
                 catalog_entries.append({
                     "sku": potion_list[i][0],
                     "name": potion_list[i][1],
