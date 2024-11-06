@@ -65,11 +65,11 @@ def search_orders(
                     )
     #Used to the content that is to be shown.
     content_query = (
-                    sqlalchemy.select(db.cart_items.c.cart_id,
-                                       db.cart_items.c.sku,
-                                       db.customer_visit.c.customer_name,
-                                       db.cart_items.c.sales_price,
-                                       db.cart_items.c.time_stamp)
+                    sqlalchemy.select(db.cart_items.c.cart_id.label("line_item_id"),
+                                       db.cart_items.c.sku.label("item_sku"),
+                                       db.customer_visit.c.customer_name.label("customer_name"),
+                                       db.cart_items.c.sales_price.label("line_item_total"),
+                                       db.cart_items.c.time_stamp.label("timestamp"))
                     .select_from(db.cart_items)
                     .join(db.carts, db.carts.c.id == db.cart_items.c.cart_id)
                     .join(db.customer_visit, db.customer_visit.c.id == db.carts.c.customer_id)
