@@ -53,63 +53,113 @@ def search_orders(
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
     """
-
-    page = 1 if search_page == "" else int(search_page)    
-    #Used to get the total results from the search.
-    stats_query = (sqlalchemy.select(sqlalchemy.func.count(db.cart_items.c.cart_id))
-                    .select_from(db.cart_items)
-                    .join(db.carts, db.carts.c.id == db.cart_items.c.cart_id)
-                    .join(db.customer_visit, db.customer_visit.c.id == db.carts.c.customer_id)
-                    .where(db.customer_visit.c.customer_name.ilike(f"%{customer_name}%"))
-                    .where(db.cart_items.c.sku.ilike(f"%{potion_sku}%"))
-                    )
-    #Used to the content that is to be shown.
-    content_query = (
-                    sqlalchemy.select(db.cart_items.c.cart_id.label("line_item_id"),
-                                       db.cart_items.c.sku.label("item_sku"),
-                                       db.customer_visit.c.customer_name.label("customer_name"),
-                                       db.cart_items.c.sales_price.label("line_item_total"),
-                                       db.cart_items.c.time_stamp.label("timestamp"))
-                    .select_from(db.cart_items)
-                    .join(db.carts, db.carts.c.id == db.cart_items.c.cart_id)
-                    .join(db.customer_visit, db.customer_visit.c.id == db.carts.c.customer_id)
-                    .where(db.customer_visit.c.customer_name.ilike(f"%{customer_name}%"))
-                    .where(db.cart_items.c.sku.ilike(f"%{potion_sku}%"))
-                    .limit(5).offset((page-1)*5)
-                    )
-    #orders the content to the shown.
-    match (sort_col, sort_order):
-        case (search_sort_options.timestamp, search_sort_order.asc):
-            content_query = content_query.order_by(db.cart_items.c.time_stamp)
-        case (search_sort_options.timestamp, search_sort_order.desc):
-            content_query = content_query.order_by(db.cart_items.c.time_stamp.desc())
-
-        case (search_sort_options.line_item_total, search_sort_order.asc):
-            content_query = content_query.order_by(db.cart_items.c.sales_price)
-        case (search_sort_options.line_item_total, search_sort_order.desc):
-            content_query = content_query.order_by(db.cart_items.c.sales_price.desc())
-
-        case (search_sort_options.item_sku, search_sort_order.asc):
-            content_query = content_query.order_by(db.cart_items.c.sku)
-        case (search_sort_options.item_sku, search_sort_order.desc):
-            content_query = content_query.order_by(db.cart_items.c.sku.desc())
-
-        case (search_sort_options.customer_name, search_sort_order.asc):
-            content_query = content_query.order_by(db.customer_visit.c.customer_name)
-        case (search_sort_options.customer_name, search_sort_order.desc):
-            content_query = content_query.order_by(db.customer_visit.c.customer_name.desc())
+    page = 1 if search_page == "" else int(search_page)
 
     with db.engine.begin() as connection:
-        #execute the stats query.
-        stats = connection.execute(stats_query).scalar_one()
-        #compiles results and executes the content query.
-        result = {
+        stats = connection.execute(sqlalchemy.text(
+            """
+            SELECT count(cart_id)
+            FROM cart_items
+                JOIN carts ON carts.id = cart_items.cart_id
+                JOIN customer_visit ON customer_visit.id = carts.customer_id
+            WHERE customer_name ILIKE :customer_name 
+                AND sku ILIKE :potion_sku
+            """
+        ), 
+        {
+            "customer_name": f"%{customer_name}%",
+            "potion_sku": f"%{potion_sku}%"
+        }).scalar_one()
+        
+        print(stats)
+
+        content = connection.execute(sqlalchemy.text(
+            f"""
+            SELECT cart_id as line_item_id,
+                sku AS item_sku,
+                customer_name,
+                sales_price*quantity AS line_item_total,
+                time_stamp AS timestamp
+            FROM cart_items
+                JOIN carts ON carts.id = cart_items.cart_id
+                JOIN customer_visit ON customer_visit.id = carts.customer_id
+            WHERE customer_name ILIKE :customer_name 
+                AND sku ILIKE :potion_sku
+            ORDER BY {sort_col.value} {sort_order.value}
+            LIMIT 5 OFFSET :page
+            """
+        ), 
+        {
+            "customer_name": f"%{customer_name}%",
+            "potion_sku": f"%{potion_sku}%",
+            "page": page-1
+        }
+        ).mappings().fetchall()
+
+        return {
             "previous": "" if page == 1 else f"{page-1}",
             "next": "" if page == stats//5 + 1 else f"{page+1}",
-            "results": connection.execute(content_query).mappings().fetchall()
+            "results": content
             }
+
+    #----------Query Builder Approach----------#
+    # page = 1 if search_page == "" else int(search_page)    
+    # #Used to get the total results from the search.
+    # stats_query = (sqlalchemy.select(sqlalchemy.func.count(db.cart_items.c.cart_id))
+    #                 .select_from(db.cart_items)
+    #                 .join(db.carts, db.carts.c.id == db.cart_items.c.cart_id)
+    #                 .join(db.customer_visit, db.customer_visit.c.id == db.carts.c.customer_id)
+    #                 .where(db.customer_visit.c.customer_name.ilike(f"%{customer_name}%"))
+    #                 .where(db.cart_items.c.sku.ilike(f"%{potion_sku}%"))
+    #                 )
+    # #Used to the content that is to be shown.
+    # content_query = (
+    #                 sqlalchemy.select(db.cart_items.c.cart_id.label("line_item_id"),
+    #                                    db.cart_items.c.sku.label("item_sku"),
+    #                                    db.customer_visit.c.customer_name.label("customer_name"),
+    #                                    db.cart_items.c.sales_price.label("line_item_total"),
+    #                                    db.cart_items.c.time_stamp.label("timestamp"))
+    #                 .select_from(db.cart_items)
+    #                 .join(db.carts, db.carts.c.id == db.cart_items.c.cart_id)
+    #                 .join(db.customer_visit, db.customer_visit.c.id == db.carts.c.customer_id)
+    #                 .where(db.customer_visit.c.customer_name.ilike(f"%{customer_name}%"))
+    #                 .where(db.cart_items.c.sku.ilike(f"%{potion_sku}%"))
+    #                 .limit(5).offset((page-1)*5)
+    #                 )
+    # #orders the content to the shown.
+    # match (sort_col, sort_order):
+    #     case (search_sort_options.timestamp, search_sort_order.asc):
+    #         content_query = content_query.order_by(db.cart_items.c.time_stamp)
+    #     case (search_sort_options.timestamp, search_sort_order.desc):
+    #         content_query = content_query.order_by(db.cart_items.c.time_stamp.desc())
+
+    #     case (search_sort_options.line_item_total, search_sort_order.asc):
+    #         content_query = content_query.order_by(db.cart_items.c.sales_price)
+    #     case (search_sort_options.line_item_total, search_sort_order.desc):
+    #         content_query = content_query.order_by(db.cart_items.c.sales_price.desc())
+
+    #     case (search_sort_options.item_sku, search_sort_order.asc):
+    #         content_query = content_query.order_by(db.cart_items.c.sku)
+    #     case (search_sort_options.item_sku, search_sort_order.desc):
+    #         content_query = content_query.order_by(db.cart_items.c.sku.desc())
+
+    #     case (search_sort_options.customer_name, search_sort_order.asc):
+    #         content_query = content_query.order_by(db.customer_visit.c.customer_name)
+    #     case (search_sort_options.customer_name, search_sort_order.desc):
+    #         content_query = content_query.order_by(db.customer_visit.c.customer_name.desc())
+
+    # with db.engine.begin() as connection:
+    #     #execute the stats query.
+    #     stats = connection.execute(stats_query).scalar_one()
+    #     #compiles results and executes the content query.
+    #     result = {
+    #         "previous": "" if page == 1 else f"{page-1}",
+    #         "next": "" if page == stats//5 + 1 else f"{page+1}",
+    #         "results": connection.execute(content_query).mappings().fetchall()
+    #         }
     
-    return result
+    # return result
+    
     # {
     #     "previous": "",
     #     "next": "",
