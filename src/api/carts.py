@@ -62,7 +62,6 @@ def search_orders(
                     .join(db.customer_visit, db.customer_visit.c.id == db.carts.c.customer_id)
                     .where(db.customer_visit.c.customer_name.ilike(f"%{customer_name}%"))
                     .where(db.cart_items.c.sku.ilike(f"%{potion_sku}%"))
-                    .limit(5).offset((page-1)*5)
                     )
     #Used to the content that is to be shown.
     content_query = (
